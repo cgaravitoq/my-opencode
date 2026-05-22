@@ -1,0 +1,15 @@
+{
+  "license": "MIT",
+  "scripts": {
+    "setup": "./scripts/install.sh",
+    "cleanup": "./scripts/uninstall.sh",
+    "install-github-issues-skill": "./scripts/install-github-issues-skill.sh"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.15.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "typescript": "^6.0.3"
+  }
+}

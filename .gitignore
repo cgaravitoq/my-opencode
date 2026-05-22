@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.claude/
+package-lock.json
+.env
+.env.local
+.claude/worktrees/
+*.backup
