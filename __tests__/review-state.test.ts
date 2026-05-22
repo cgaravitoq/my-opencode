@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import type { ToolContext } from "@opencode-ai/plugin"
-import reviewState from "./review-state.ts"
+import reviewState from "../.opencode/tools/review-state.ts"
 
 type ExecuteResult = { ok: true; nextAction?: string; state?: unknown; authorized?: boolean; verdict?: string }
 

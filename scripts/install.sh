@@ -51,6 +51,9 @@ done
 # Tools (file by file so new ones in the target dir aren't disturbed)
 for tool_file in "${REPO_DIR}/.opencode/tools/"*.{ts,js}; do
   [[ -f "$tool_file" ]] || continue
+  case "$(basename "$tool_file")" in
+    *.test.ts|*.test.js|*.spec.ts|*.spec.js) continue ;;
+  esac
   link "$tool_file" "${TARGET_DIR}/tools/$(basename "$tool_file")"
 done
 

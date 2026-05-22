@@ -15,5 +15,5 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false
   },
-  "include": [".opencode/**/*.ts"]
+  "include": [".opencode/**/*.ts", "__tests__/**/*.ts"]
 }
