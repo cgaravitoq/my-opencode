@@ -20,11 +20,9 @@ Versioned, portable [OpenCode](https://opencode.ai) configuration: agents, skill
 │   ├── pipeline-execution/    # Generic exec → reviewer → fixer → PR pipeline (tracker-agnostic)
 │   └── swarm-review/          # Multi-model parallel code review (used by `coder` fast path)
 ├── templates/
-│   └── github-issues-skill/   # GitHub Issues bundle template — installed PER REPO via install-github-issues-skill.sh
+│   └── github-issues-skill/   # GitHub Issues bundle template — installed PER REPO via `bun run install-issues-bundle`
 ├── scripts/
-│   ├── install.sh                       # Symlinks global agents/skills into ~/.config/opencode/
-│   ├── uninstall.sh                     # Reverses the global install
-│   └── install-github-issues-skill.sh   # Copies the GitHub Issues bundle template into a target repo
+│   └── cli.ts                 # Bun CLI: `setup`, `cleanup`, `install-issues-bundle`
 ├── .opencode/
 │   ├── plugins/               # Global OpenCode plugins symlinked into ~/.config/opencode/plugins/
 │   │   └── review-guardrails.ts # Publish gate: blocks `git push` / `gh pr create` until review-state authorizes
@@ -52,8 +50,6 @@ cd ~/code/opencode-template
 
 ```bash
 bun run setup
-# or, equivalently:
-./scripts/install.sh
 ```
 
 This symlinks every file in this repo into `~/.config/opencode/`. Existing files are backed up to `<name>.backup` before being replaced. Re-run any time you add new agents or skills to the repo (existing symlinks resolve through `git pull` automatically; only new files need re-linking).
@@ -90,7 +86,7 @@ opencode
 **Per-repo layer** (lives in each repo's `.agents/skills/github-issues/`):
 
 - One GitHub Issues bundle per repo. Defines that repo's status-label flow, sub-skills, and shaping rules.
-- Installed once per repo via `./scripts/install-github-issues-skill.sh`. After install, you customize it for your label conventions.
+- Installed once per repo via `bun run install-issues-bundle /path/to/repo`. After install, you customize it for your label conventions.
 - The architect auto-detects the bundle and uses it for issue-mode requests in that repo. No bundle = ad-hoc only.
 
 ### Agents
@@ -163,10 +159,10 @@ Each repo that wants GitHub Issues integration installs its own bundle in `.agen
 
 ```bash
 # from this template repo
-./scripts/install-github-issues-skill.sh /path/to/your/repo
+bun run install-issues-bundle /path/to/your/repo
 
-# or from inside the target repo
-bun run --cwd /path/to/template install-github-issues-skill .
+# or from anywhere, pointing at the target
+bun --cwd /path/to/template run install-issues-bundle /path/to/your/repo
 ```
 
 Default template (under `templates/github-issues-skill/`) ships with an opinionated flow, encoded as `status:*` labels:
@@ -253,7 +249,7 @@ Drop any of these into `opencode.json` under `"mcp"` if you want them. None are 
 The architect adapts to whatever repo you're in:
 
 - **Repo with `.agents/skills/github-issues/`** — architect loads that bundle and routes issue-mode requests through it. Each repo can have its own label names and flow (e.g. `status:prd` vs `status:spec-ready`, 6-state vs 11-state flow).
-- **Repo without a bundle** — only ad-hoc mode is available. Architect asks if you want to install one (`./scripts/install-github-issues-skill.sh`) or proceed without issue tracking.
+- **Repo without a bundle** — only ad-hoc mode is available. Architect asks if you want to install one (`bun run install-issues-bundle <repo>`) or proceed without issue tracking.
 - **Trivial change** — invoke `coder` directly. Skips the pipeline.
 
 Code work always goes through the global `pipeline-execution` skill — same `exec → reviewer → fixer → PR` everywhere. The per-repo bundle only handles GitHub Issues bookkeeping.
@@ -261,14 +257,14 @@ Code work always goes through the global `pipeline-execution` skill — same `ex
 To install the GitHub Issues bundle in a new repo:
 
 ```bash
-# from inside the target repo
-~/code/opencode-template/scripts/install-github-issues-skill.sh
+# from the template repo, pointing at the target
+bun --cwd ~/code/opencode-template run install-issues-bundle /path/to/repo
 
-# or from anywhere, pointing at the target
-~/code/opencode-template/scripts/install-github-issues-skill.sh /path/to/repo
+# from inside the template repo, defaults to $(pwd)
+bun run install-issues-bundle /path/to/repo
 
 # overwrite an existing bundle (auto-backed-up)
-./scripts/install-github-issues-skill.sh --force
+bun run install-issues-bundle /path/to/repo --force
 ```
 
 After install, edit `<repo>/.agents/skills/github-issues/SKILL.md` and the sub-skills to match your label conventions. Seed the labels with `gh label create` (see `references/status-mapping.md` in the bundle). Commit the bundle to the repo so the rest of the team (and your other machines) get the same setup.
@@ -283,8 +279,6 @@ If you ever pull a version of this repo that removed a globally-symlinked file, 
 
 ```bash
 bun run cleanup
-# or:
-./scripts/uninstall.sh
 ```
 
 Removes only the symlinks pointing into this repo; restores `.backup` files if they exist.

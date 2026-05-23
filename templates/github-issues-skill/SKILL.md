@@ -17,7 +17,7 @@ The execution sub-skill (`prd-to-execution` in this default bundle) delegates to
 
 ## Customizing for your workspace
 
-After installing this template into a repo (`./scripts/install-github-issues-skill.sh`), edit:
+After installing this template into a repo (`bun run install-issues-bundle <repo>` from the opencode-template repo), edit:
 
 1. **The status label names below** if you prefer different conventions (e.g. `status:spec-draft` instead of `status:draft`, `status:spec-ready` instead of `status:prd`).
 2. **The sub-skill bodies** to match your shaping conventions (e.g. always-parent-issue vs. single-issue intake).

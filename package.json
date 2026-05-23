@@ -1,9 +1,9 @@
 {
   "license": "MIT",
   "scripts": {
-    "setup": "./scripts/install.sh",
-    "cleanup": "./scripts/uninstall.sh",
-    "install-github-issues-skill": "./scripts/install-github-issues-skill.sh"
+    "setup": "bun scripts/cli.ts setup",
+    "cleanup": "bun scripts/cli.ts cleanup",
+    "install-issues-bundle": "bun scripts/cli.ts install-issues-bundle"
   },
   "dependencies": {
     "@opencode-ai/plugin": "1.15.5"

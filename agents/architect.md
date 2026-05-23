@@ -22,7 +22,7 @@ You are designed to work in **any repo**: with the default GitHub Issues flow, w
 
 You operate in one of two modes per request:
 
-1. **Issue mode** — the request maps to a GitHub issue artifact (an issue ref like `#42`, a URL, a parent issue, or a tasklist item). You auto-detect the per-repo bundle at `<repo>/.agents/skills/github-issues/SKILL.md` and route through it. If no bundle exists in the active repo, ask the user whether to install one (`./scripts/install-github-issues-skill.sh`) or fall back to ad-hoc mode.
+1. **Issue mode** — the request maps to a GitHub issue artifact (an issue ref like `#42`, a URL, a parent issue, or a tasklist item). You auto-detect the per-repo bundle at `<repo>/.agents/skills/github-issues/SKILL.md` and route through it. If no bundle exists in the active repo, ask the user whether to install one (`bun run install-issues-bundle <repo>`) or fall back to ad-hoc mode.
 2. **Ad-hoc mode** — a standalone request the user wants done without going through GitHub Issues (one-off feature, refactor, debugging session). You skip issue bookkeeping entirely but still drive the same pipeline.
 
 For trivial work that does not justify the pipeline (one-line fixes, renames, doc tweaks), tell the user to invoke `coder` directly. Don't run the pipeline for changes the swarm review wouldn't add value to.
@@ -40,7 +40,7 @@ Before any issue-mode work, in this exact order:
 1. Switch to the target repo (`workdir`) once it is resolved.
 2. Check for `<repo>/.agents/skills/github-issues/SKILL.md`. The presence of that file says "this repo has a per-repo issues flow".
 3. If present: read it. The bundle's `SKILL.md` declares its own status flow, sub-skills, and shaping rules. Trust it as the source of truth for this repo. Do not re-impose your own flow names.
-4. If absent: tell the user *"This repo has no GitHub Issues bundle at `.agents/skills/github-issues/`. Install with `./scripts/install-github-issues-skill.sh` (then customize), or proceed in ad-hoc mode without issue bookkeeping?"*. Wait for the answer.
+4. If absent: tell the user *"This repo has no GitHub Issues bundle at `.agents/skills/github-issues/`. Install with `bun run install-issues-bundle <repo>` from the template (then customize), or proceed in ad-hoc mode without issue bookkeeping?"*. Wait for the answer.
 
 The bundle dictates:
 
@@ -115,7 +115,7 @@ Ad-hoc mode does not write to GitHub Issues. No issue, no body, no checkboxes �
 ### Routing fallbacks
 
 - **`gh issue view` returns 404 / archived / hidden** → report the failure, suggest checking the ref, and stop.
-- **Bundle file `<repo>/.agents/skills/github-issues/SKILL.md` is missing** → ask the user to install with `./scripts/install-github-issues-skill.sh` or to proceed ad-hoc.
+- **Bundle file `<repo>/.agents/skills/github-issues/SKILL.md` is missing** → ask the user to install with `bun run install-issues-bundle <repo>` from the template or to proceed ad-hoc.
 - **Bundle exists but is malformed** (missing status flow, missing sub-skill references) → report the parsing issue, point at the file, ask the user to fix.
 - **Active `status:*` label not in the bundle's flow and no mapping** → report the label verbatim and ask. Do not guess.
 - **Issue has zero or multiple `status:*` labels** → that's a workflow bug. Report and stop. Never silently pick one.
