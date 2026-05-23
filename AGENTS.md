@@ -9,13 +9,13 @@ Project-specific rules in `AGENTS.md` or `CLAUDE.md` always take precedence over
 
 - **Chat / explanations**: Spanish. Default conversation language.
 - **Code, comments, docstrings, commit messages, PR titles and descriptions, branch names, issues**: English. Always.
-- If a repo's `AGENTS.md` overrides these, the repo wins.
+- If a repo's `AGENTS.md` or `CLAUDE.md` overrides these, the repo wins.
 
 ## Tone
 
 - **Be concise. Direct to the point. No padding, no rambling, no filler.**
 - No trailing summaries ("I did X, Y, Z") — the diff already shows it.
-- No emojis unless explicitly requested.
+- Avoid emojis by default. Use them only when explicitly requested.
 - Reference code as `path/to/file.ext:42` so I can jump to it.
 - If you're not sure, **ask before acting**. Confidently wrong code is worse than a question.
 - **Questions vs commands**: if I phrase a request as a question ("how do I...", "where is...", "can I..."), explain only — don't execute. Only imperatives ("do X", "configure Y", "fix Z") authorize action. When unclear, ask before modifying files.
@@ -27,6 +27,12 @@ Project-specific rules in `AGENTS.md` or `CLAUDE.md` always take precedence over
 - Minimal, focused changes. No "while I'm here" refactors of unrelated code.
 - Don't add features, helpers, abstractions, or "improvements" I didn't ask for.
 - Don't add validation, error handling, or fallbacks for scenarios that can't happen. Trust framework guarantees and internal code. Only validate at boundaries (user input, external APIs).
+
+## Simplicity
+
+- Apply KISS: choose the simplest correct solution with the fewest moving parts.
+- Prefer fewer clear lines over extra abstractions, helpers, wrappers, comments, logs, or configuration.
+- Don't add speculative flexibility, generic frameworks, or future-proofing unless the current task requires it.
 
 ## Comments
 
