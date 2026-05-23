@@ -1,6 +1,6 @@
 ---
 name: pipeline-execution
-description: Generic implementation pipeline. Drives `exec → reviewer → fixer × ≤3 → draft PR` on a target repo without any tracker coupling. Use when the architect has a concrete task list, a target repo, and a parent branch, and needs the change committed, reviewed, and pushed as a draft PR. Reusable across any flow (GitHub Issues, ad-hoc, or third-party tracker).
+description: Drives the `exec → reviewer → fixer ×≤3 → draft PR` pipeline on a target repo. Use when the architect has a concrete task list, a target repo, and a parent branch. Tracker-agnostic.
 license: MIT
 metadata:
   author: cgaravitoq

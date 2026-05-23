@@ -1,6 +1,6 @@
 ---
 name: swarm-review
-description: Multi-model code review swarm. Use when the user asks for a review or audit of recent code changes, or when significant implementation work would benefit from validation by multiple independent models. Trigger phrases include "audita el código", "audita esto", "revisa mi implementación", "revisa esto", "haz un review", "review this", "code review", "second opinion", "qué se me escapó", "dame perspectivas", "lanza el swarm", "audit my code", "review my changes". Delegates in parallel to four reviewer subagents (reviewer-quick, reviewer-arch, reviewer-reasoning, reviewer-e2e) running DeepSeek models (V4 Flash + V4 Pro) specialized by review focus to surface issues that a single pass would miss. Consolidates the findings into a single prioritized summary for the user.
+description: Multi-model parallel code review. Use when the user asks to review, audit, or get a second opinion on recent code changes. Delegates to four DeepSeek reviewer subagents in parallel, then consolidates findings into a prioritized summary.
 license: MIT
 metadata:
   author: cgaravitoq
