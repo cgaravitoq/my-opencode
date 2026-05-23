@@ -1,6 +1,6 @@
-# opencode-template
+# my-opencode
 
-Versioned, portable [OpenCode](https://opencode.ai) configuration: agents, skills, MCP servers, and opinionated global rules. Clone this repo on any machine, run the installer, and your OpenCode setup is ready.
+Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agent coding workflow: global agents, reusable skills, review guardrails, and a per-repo GitHub Issues bundle template. Clone it on any machine, run the installer, and your OpenCode setup is ready.
 
 ## What's inside
 
@@ -42,8 +42,8 @@ curl -fsSL https://opencode.ai/install | bash
 ### 2. Clone this repo
 
 ```bash
-git clone <your-fork-url> ~/code/opencode-template
-cd ~/code/opencode-template
+git clone https://github.com/cgaravitoq/my-opencode.git ~/code/my-opencode
+cd ~/code/my-opencode
 ```
 
 ### 3. Run the installer
@@ -280,7 +280,7 @@ To install the GitHub Issues bundle in a new repo:
 
 ```bash
 # from the template repo, pointing at the target
-bun --cwd ~/code/opencode-template run install-issues-bundle /path/to/repo
+bun --cwd ~/code/my-opencode run install-issues-bundle /path/to/repo
 
 # from inside the template repo, defaults to $(pwd)
 bun run install-issues-bundle /path/to/repo
