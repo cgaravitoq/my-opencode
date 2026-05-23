@@ -3,6 +3,7 @@
   "scripts": {
     "setup": "bun scripts/cli.ts setup",
     "cleanup": "bun scripts/cli.ts cleanup",
+    "install-skills": "bun scripts/cli.ts install-skills",
     "install-issues-bundle": "bun scripts/cli.ts install-issues-bundle"
   },
   "dependencies": {

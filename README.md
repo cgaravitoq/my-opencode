@@ -16,13 +16,13 @@ Versioned, portable [OpenCode](https://opencode.ai) configuration: agents, skill
 │   ├── reviewer.md            # Subagent: review-fix loop owner + PR opener — Opus 4.7 medium
 │   ├── fixer.md               # Subagent: applies blocker deltas from reviewer — GPT-5.5
 │   └── reviewer-*.md          # Four read-only swarm reviewers
-├── skills/                    # Global skills installed into ~/.config/opencode/skills/
+├── skills/                    # Global skills; also installable per repo with `bunx skills add ... --all`
 │   ├── pipeline-execution/    # Generic exec → reviewer → fixer → PR pipeline (tracker-agnostic)
 │   └── swarm-review/          # Multi-model parallel code review (used by `coder` fast path)
 ├── templates/
 │   └── github-issues-skill/   # GitHub Issues bundle template — installed PER REPO via `bun run install-issues-bundle`
 ├── scripts/
-│   └── cli.ts                 # Bun CLI: `setup`, `cleanup`, `install-issues-bundle`
+│   └── cli.ts                 # Bun CLI: `setup`, `cleanup`, `install-skills`, `install-issues-bundle`
 ├── .opencode/
 │   ├── plugins/               # Global OpenCode plugins symlinked into ~/.config/opencode/plugins/
 │   │   └── review-guardrails.ts # Publish gate: blocks `git push` / `gh pr create` until review-state authorizes
@@ -74,16 +74,38 @@ opencode
 /models    # should include anthropic/claude-opus-4-7, anthropic/claude-sonnet-4-6, openai/gpt-5.5, opencode-go/deepseek-v4-pro, opencode-go/deepseek-v4-flash
 ```
 
+## Install skills into the current repo
+
+Use this when OpenCode is already configured globally and you only want this repo's reusable skills in the project you're currently in:
+
+```bash
+cd /path/to/target-repo
+bunx skills add cgaravitoq/my-opencode --all
+```
+
+That installs `pipeline-execution` and `swarm-review` into `.agents/skills/` and writes `skills-lock.json`. It does not install global agents, plugins, or tools; run `bun run setup` from this repo once for those.
+
+From a local checkout of this repo, the equivalent target-repo installer is:
+
+```bash
+bun run install-skills /path/to/target-repo
+```
+
 ## How it works
 
-### Two layers
+### Layers
 
 **Global layer** (lives in `~/.config/opencode/`, symlinked from this repo):
 
 - 5 + 4 agents (primaries + swarm).
 - 2 skills: `pipeline-execution` (the code-shipping pipeline) and `swarm-review` (used by the `coder` fast path).
 
-**Per-repo layer** (lives in each repo's `.agents/skills/github-issues/`):
+**Per-repo skills layer** (lives in each repo's `.agents/skills/`):
+
+- Installed from the public repo with `bunx skills add cgaravitoq/my-opencode --all`.
+- Adds the reusable skills to that repo without touching global OpenCode config.
+
+**Per-repo GitHub Issues layer** (lives in each repo's `.agents/skills/github-issues/`):
 
 - One GitHub Issues bundle per repo. Defines that repo's status-label flow, sub-skills, and shaping rules.
 - Installed once per repo via `bun run install-issues-bundle /path/to/repo`. After install, you customize it for your label conventions.
