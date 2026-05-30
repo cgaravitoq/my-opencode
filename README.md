@@ -10,10 +10,10 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 ├── AGENTS.md                  # Opinionated global rules loaded into every agent
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
-│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) — Opus 4.7 max
-│   ├── coder.md               # Primary fast-path agent for trivial changes — Opus 4.7 max
+│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) — Opus 4.8 max
+│   ├── coder.md               # Primary fast-path agent for trivial changes — Opus 4.8 max
 │   ├── exec.md                # Subagent: implementer driven by pipeline-execution — GPT-5.5
-│   ├── reviewer.md            # Subagent: review-fix loop owner + PR opener — Opus 4.7 medium
+│   ├── reviewer.md            # Subagent: review-fix loop owner + PR opener — Opus 4.8 medium
 │   ├── fixer.md               # Subagent: applies blocker deltas from reviewer — GPT-5.5
 │   └── reviewer-*.md          # Four read-only swarm reviewers
 ├── skills/                    # Global skills; also installable per repo with `bunx skills add ... --all`
@@ -71,7 +71,7 @@ opencode
 opencode
 # in the TUI:
 /agents    # should list: architect, coder, exec, reviewer, fixer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick
-/models    # should include anthropic/claude-opus-4-7, anthropic/claude-sonnet-4-6, openai/gpt-5.5, opencode-go/deepseek-v4-pro, opencode-go/deepseek-v4-flash
+/models    # should include anthropic/claude-opus-4-8, anthropic/claude-sonnet-4-6, openai/gpt-5.5, opencode-go/deepseek-v4-pro, opencode-go/deepseek-v4-flash
 ```
 
 ## Install skills into the current repo
@@ -126,10 +126,10 @@ The pipeline subagents are invoked by `pipeline-execution` (not the architect di
 
 | Agent | Mode | Model | Lab | Specialty |
 |---|---|---|---|---|
-| `architect` | primary | Claude Opus 4.7 (max) | Anthropic | Orchestrator. Per-repo GitHub Issues bundle aware. |
+| `architect` | primary | Claude Opus 4.8 (max) | Anthropic | Orchestrator. Per-repo GitHub Issues bundle aware. |
 | `coder` | primary | Claude Sonnet 4.6 (medium) | Anthropic | Fast-path coder for trivial changes. |
 | `exec` | subagent | GPT-5.5 (low) | OpenAI | Implementer (invoked via `pipeline-execution`). |
-| `reviewer` | subagent | Claude Opus 4.7 (medium) | Anthropic | Review-fix loop owner + PR opener. |
+| `reviewer` | subagent | Claude Opus 4.8 (medium) | Anthropic | Review-fix loop owner + PR opener. |
 | `fixer` | subagent | GPT-5.5 (medium) | OpenAI | Applies blocker deltas from reviewer. |
 | `reviewer-quick` | subagent | DeepSeek V4 Flash | DeepSeek | Fast first-pass: typos, copy-paste errors. |
 | `reviewer-arch` | subagent | DeepSeek V4 Pro | DeepSeek | Architecture, design patterns, abstractions. |
@@ -143,7 +143,7 @@ The single shared implementation pipeline. Tracker-agnostic. Used by the archite
 ```text
 pipeline-execution (skill)
   ├─ task → exec (GPT-5.5)               implement task on parent branch
-  └─ task → reviewer (Opus 4.7 medium)
+  └─ task → reviewer (Opus 4.8 medium)
             ├─ task → reviewer-* (swarm, parallel)   audit
             ├─ task → fixer (GPT-5.5) ← loop ≤3
             └─ push parent branch

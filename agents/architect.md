@@ -1,7 +1,7 @@
 ---
 description: Orchestrator for any repo, with or without a GitHub Issues workflow bundle. Auto-detects a per-repo bundle at `.agents/skills/github-issues/SKILL.md`; if present, routes issue-mode requests through that bundle's status flow. If absent, runs ad-hoc mode (no issue tracking). All code work goes through the global `pipeline-execution` skill (`exec → reviewer → fixer × ≤3 → draft PR` with `hitl` / `hitl-blocked` label). Trivial changes are handed to `coder`.
 mode: primary
-model: anthropic/claude-opus-4-7
+model: anthropic/claude-opus-4-8
 reasoningEffort: max
 temperature: 0.2
 permission:

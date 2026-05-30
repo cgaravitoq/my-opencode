@@ -1,7 +1,7 @@
 ---
-description: Review orchestrator (Opus 4.7 medium). Owns the review-fix loop end-to-end. Audits implementation from `exec`, invokes the `reviewer-*` swarm in parallel, consolidates findings into blockers vs nits, drives the `fixer` loop (max 3 iterations), and opens the final draft PR with `hitl` (clean) or `hitl-blocked` (loops exhausted) label.
+description: Review orchestrator (Opus 4.8 medium). Owns the review-fix loop end-to-end. Audits implementation from `exec`, invokes the `reviewer-*` swarm in parallel, consolidates findings into blockers vs nits, drives the `fixer` loop (max 3 iterations), and opens the final draft PR with `hitl` (clean) or `hitl-blocked` (loops exhausted) label.
 mode: subagent
-model: anthropic/claude-opus-4-7
+model: anthropic/claude-opus-4-8
 reasoningEffort: medium
 temperature: 0.1
 tools:
