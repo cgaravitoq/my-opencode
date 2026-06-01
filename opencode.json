@@ -7,8 +7,7 @@
     "*": "allow",
     "doom_loop": "deny",
     "bash": {
-      "*": "allow",
-      "rm *": "ask"
+      "*": "allow"
     }
   },
   "agent": {

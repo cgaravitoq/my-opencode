@@ -36,10 +36,11 @@ Project-specific rules in `AGENTS.md` or `CLAUDE.md` always take precedence over
 
 ## Comments
 
-- **Comments only in complex code** that isn't self-explanatory at a glance and genuinely needs explanation to be understood.
-- If the code reads clearly on its own, no comment.
-- When you do comment, explain **why**, not **what**.
-- Don't add docstrings, type hints, or comments to code you didn't touch.
+- **Default: no comments.** Write self-explanatory code — clear names, small functions — so comments aren't needed. The diff and the code speak for themselves.
+- **Only comment when extremely necessary**: code whose intent is genuinely non-obvious and impossible to make clear through naming or structure alone (a subtle invariant, a non-obvious workaround, a "why" that the code can't express).
+- When you do comment, explain **why**, never **what**. If the comment restates the code, delete it.
+- No docstrings, no type-hint-only comments, no section banners, no TODO/placeholder noise by default.
+- Don't add comments to code you didn't touch.
 
 ## Files and docs
 
