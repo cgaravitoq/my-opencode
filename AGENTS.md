@@ -98,3 +98,11 @@ The repo decides the stack. Adapt to what's already there — don't impose prefe
 
 - Project `AGENTS.md` / `CLAUDE.md` always takes precedence over this file.
 - If you see me repeating the same correction, flag it — it probably belongs in the project's `AGENTS.md`, not here.
+
+## Project catalog (ambient awareness)
+
+My personal project tracking lives in the private repo `cgaravitoq/projects` (local clone: `~/Projects/projects/`). It is the single source of truth for which projects exist, their status, and next actions.
+
+- When I ask "what's pending", "what can I work on now", or anything about my projects: read `~/Projects/projects/README.md` (lightweight index), then `projects/<slug>.md` only for the projects that matter. Do NOT preload all project files.
+- After a work session on a cataloged project: update its `projects/<slug>.md` (status/next/updated + one Log line) following that repo's AGENTS.md, commit and push the catalog.
+- If something in an unrelated conversation is clearly useful for a cataloged project, mention it proactively ("this would fit project X").
