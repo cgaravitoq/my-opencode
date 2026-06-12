@@ -26,9 +26,9 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
-    "projects-catalog": {
+    "memory-cloud": {
       "type": "remote",
-      "url": "{env:PROJECTS_MCP_URL}"
+      "url": "{env:MEMORY_CLOUD_URL}"
     }
   }
 }
