@@ -4,11 +4,11 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@opencode-ai/plugin": "latest",
+        "@opencode-ai/plugin": "1.15.12",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "latest",
+        "@types/bun": "^1.3.14",
+        "typescript": "^6.0.3",
       },
     },
   },
