@@ -154,7 +154,7 @@ Diversity by design: planner (Anthropic Opus), executor (OpenAI GPT-5.5), review
 
 ### Publish gate (`.opencode/plugins/` + `.opencode/tools/`)
 
-The loop above is enforced by two global files symlinked into `~/.config/opencode/` by the installer. `.opencode/plugins/review-guardrails.ts` intercepts `git push` and `gh pr create` and blocks them until the branch has been authorized — that's why pushes can error with `publish gated by review-state for branch <name>`. Authorization lives in `.opencode/tools/review-state.ts`, the custom tool the `reviewer` agent uses to track the review-fix loop and mark a branch ready to publish (see `agents/reviewer.md` "Loop State (hard gate)"). Add your own plugins or tools by dropping `.ts`/`.js` files into these directories and re-running `bun run setup`.
+The loop above is enforced by two global files symlinked into `~/.config/opencode/` by the installer. `.opencode/plugins/review-guardrails.ts` intercepts `git push` and `gh pr create` and blocks them until the branch has been authorized — that's why pushes can error with `publish gated by review-state for branch <name>`. Authorization lives in `.opencode/tools/review-state.ts`, the custom tool the `reviewer` agent uses to track the review-fix loop and mark a branch ready to publish (see `agents/reviewer.md` "Loop State (hard gate)"). The loop budget (3 fixer passes + swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review. Add your own plugins or tools by dropping `.ts`/`.js` files into these directories and re-running `bun run setup`.
 
 ### Context window tuning
 
@@ -251,7 +251,7 @@ If the `review-guardrails` plugin blocks a `git push` / `gh pr create` due to co
 OPENCODE_REVIEW_BYPASS=1 git push
 ```
 
-Use it only as an escape hatch — bypassing the gate also disables the swarm-budget cap, so a runaway reviewer loop can keep spawning subagents past `OPENCODE_REVIEW_SWARM_CAP`. Prefer inspecting or deleting the offending state file first: `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`).
+Use it only as an escape hatch — bypassing the gate also disables the swarm-budget cap, so a runaway reviewer loop can keep spawning subagents past `OPENCODE_REVIEW_SWARM_CAP`. Prefer inspecting or deleting the offending state file first: `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`); manual reset is now mostly for corrupted or stale state because normal new cycles reset themselves on `start` after publish.
 
 ## MCPs
 
