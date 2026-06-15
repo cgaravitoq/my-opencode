@@ -130,12 +130,13 @@ If `mode` is missing, default to `pr`.
 
 ## Loop State (hard gate)
 
-The pass counter is NOT in your head. It lives in the `review-state` custom tool, persisted outside the repo under the user state directory. The tool rejects `pass > 3` and rejects re-recording an identical blocker set. The plugin `review-guardrails` blocks `git push`, `gh pr create`, and `gh pr edit` until you call `review-state` with `action: "request_publish"`. The same state file persists the swarm budget: default max 32 total `reviewer-*` subagent calls per branch loop, configurable with `OPENCODE_REVIEW_SWARM_CAP`. Treat the tool's responses as authoritative.
+The pass counter is NOT in your head. It lives in the `review-state` custom tool, persisted outside the repo under the user state directory. The tool rejects `pass > 3` and rejects re-recording an identical blocker set. The plugin `review-guardrails` blocks `git push`, `gh pr create`, and `gh pr edit` until you call `review-state` with `action: "request_publish"`. The same state file persists the swarm budget: default max 32 total `reviewer-*` subagent calls per branch loop, configurable with `OPENCODE_REVIEW_SWARM_CAP`. The 3-pass cap and swarm budget are per review cycle; `request_publish` closes the current cycle. Treat the tool's responses as authoritative.
 
 Lifecycle:
 
 1. At the start of every invocation, call `review-state({ branch, action: "start" })`. Idempotent — safe to call on resumed runs.
-   - If `start` returns existing `state.passes`, resume at `state.passes[state.passes.length - 1].pass + 1`. Do not replay completed passes.
+   - If the previous loop did not publish and `start` returns existing `state.passes`, resume at `state.passes[state.passes.length - 1].pass + 1`. Do not replay completed passes.
+   - If the previous cycle already published and the same branch is being re-reviewed after new `exec` commits, `start` begins a fresh cycle with a new 3-pass + swarm budget and archives the prior cycle into `cycles[]`.
 2. Before invoking `fixer` for any pass, compute a stable hash of the blocker list (sha256 of JSON.stringify of the sorted, normalized blockers — same `file:line` + same description = same hash) and call `review-state({ branch, action: "record_pass", pass: <N>, blockersHash: <hex> })`.
    - If the tool returns `nextAction: "fix"` → invoke `fixer` as planned.
    - If the tool returns `nextAction: "abort_duplicate"` → STOP. The reviewer is asking the fixer to do the same work twice. Skip to step 3 below with verdict `blocked`.
