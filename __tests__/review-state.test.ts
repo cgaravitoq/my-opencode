@@ -117,4 +117,69 @@ describe("review-state tool", () => {
     const r2 = parse(await reviewState.execute({ branch: "feature/d", action: "record_swarm" }, context))
     expect((r2 as { swarmInvocations?: number }).swarmInvocations).toBe(2)
   })
+
+  test("new cycle after publish resets budget and archives prior passes", async () => {
+    await reviewState.execute({ branch: "feature/cycle", action: "start" }, context)
+    await reviewState.execute({ branch: "feature/cycle", action: "record_swarm" }, context)
+
+    const p1 = parse(
+      await reviewState.execute(
+        { branch: "feature/cycle", action: "record_pass", pass: 1, blockersHash: "hashA" },
+        context,
+      ),
+    )
+    expect(p1.nextAction).toBe("fix")
+
+    const publish = parse(
+      await reviewState.execute({ branch: "feature/cycle", action: "request_publish", verdict: "clean" }, context),
+    )
+    expect(publish.authorized).toBe(true)
+
+    const restarted = parse(await reviewState.execute({ branch: "feature/cycle", action: "start" }, context))
+    const state = restarted.state as {
+      passes?: { blockersHash?: string }[]
+      publishAuthorized?: boolean
+      swarmInvocations?: number
+      publishVerdict?: string
+      cycles?: { passes?: { blockersHash?: string }[]; publishVerdict?: string }[]
+    }
+    expect(state.passes).toHaveLength(0)
+    expect(state.publishAuthorized).toBe(false)
+    expect(state.swarmInvocations).toBe(0)
+    expect(state.publishVerdict).toBeUndefined()
+    expect(state.cycles).toHaveLength(1)
+    expect(state.cycles?.[0]?.passes).toHaveLength(1)
+    expect(state.cycles?.[0]?.passes?.[0]?.blockersHash).toBe("hashA")
+    expect(state.cycles?.[0]?.publishVerdict).toBe("clean")
+
+    const nextP1 = parse(
+      await reviewState.execute(
+        { branch: "feature/cycle", action: "record_pass", pass: 1, blockersHash: "hashA" },
+        context,
+      ),
+    )
+    expect(nextP1.nextAction).toBe("fix")
+  })
+
+  test("start resumes an un-published interrupted loop without resetting", async () => {
+    await reviewState.execute({ branch: "feature/resume", action: "start" }, context)
+
+    const p1 = parse(
+      await reviewState.execute(
+        { branch: "feature/resume", action: "record_pass", pass: 1, blockersHash: "hashA" },
+        context,
+      ),
+    )
+    expect(p1.nextAction).toBe("fix")
+
+    const restarted = parse(await reviewState.execute({ branch: "feature/resume", action: "start" }, context))
+    const state = restarted.state as {
+      passes?: { blockersHash?: string }[]
+      publishAuthorized?: boolean
+      cycles?: unknown[]
+    }
+    expect(state.passes).toHaveLength(1)
+    expect(state.publishAuthorized).toBe(false)
+    expect(state.cycles === undefined || state.cycles.length === 0).toBe(true)
+  })
 })
