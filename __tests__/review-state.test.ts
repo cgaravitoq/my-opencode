@@ -182,4 +182,68 @@ describe("review-state tool", () => {
     expect(state.publishAuthorized).toBe(false)
     expect(state.cycles === undefined || state.cycles.length === 0).toBe(true)
   })
+
+  test("cycles accumulate across multiple publish→restart rounds", async () => {
+    await reviewState.execute({ branch: "feature/multicycle", action: "start" }, context)
+    await reviewState.execute({ branch: "feature/multicycle", action: "record_swarm" }, context)
+    await reviewState.execute({ branch: "feature/multicycle", action: "record_swarm" }, context)
+
+    const p1 = parse(
+      await reviewState.execute(
+        { branch: "feature/multicycle", action: "record_pass", pass: 1, blockersHash: "hashA1" },
+        context,
+      ),
+    )
+    expect(p1.nextAction).toBe("fix")
+
+    const publish = parse(
+      await reviewState.execute(
+        { branch: "feature/multicycle", action: "request_publish", verdict: "clean" },
+        context,
+      ),
+    )
+    expect(publish.authorized).toBe(true)
+
+    const restarted = parse(await reviewState.execute({ branch: "feature/multicycle", action: "start" }, context))
+    const state = restarted.state as {
+      passes?: { blockersHash?: string }[]
+      swarmInvocations?: number
+      cycles?: { passes?: { blockersHash?: string }[]; swarmInvocations?: number; publishVerdict?: string }[]
+    }
+    expect(state.cycles).toHaveLength(1)
+    expect(state.cycles?.[0]?.passes).toHaveLength(1)
+    expect(state.cycles?.[0]?.passes?.[0]?.blockersHash).toBe("hashA1")
+    expect(state.cycles?.[0]?.swarmInvocations).toBe(2)
+    expect(state.cycles?.[0]?.publishVerdict).toBe("clean")
+    expect(state.swarmInvocations).toBe(0)
+    expect(state.passes).toHaveLength(0)
+
+    await reviewState.execute({ branch: "feature/multicycle", action: "record_swarm" }, context)
+
+    const nextP1 = parse(
+      await reviewState.execute(
+        { branch: "feature/multicycle", action: "record_pass", pass: 1, blockersHash: "hashB1" },
+        context,
+      ),
+    )
+    expect(nextP1.nextAction).toBe("fix")
+
+    const nextPublish = parse(
+      await reviewState.execute(
+        { branch: "feature/multicycle", action: "request_publish", verdict: "clean" },
+        context,
+      ),
+    )
+    expect(nextPublish.authorized).toBe(true)
+
+    const nextRestarted = parse(await reviewState.execute({ branch: "feature/multicycle", action: "start" }, context))
+    const nextState = nextRestarted.state as {
+      cycles?: { passes?: { blockersHash?: string }[]; swarmInvocations?: number }[]
+    }
+    expect(nextState.cycles).toHaveLength(2)
+    expect(nextState.cycles?.[0]?.passes?.[0]?.blockersHash).toBe("hashA1")
+    expect(nextState.cycles?.[0]?.swarmInvocations).toBe(2)
+    expect(nextState.cycles?.[1]?.passes?.[0]?.blockersHash).toBe("hashB1")
+    expect(nextState.cycles?.[1]?.swarmInvocations).toBe(1)
+  })
 })
