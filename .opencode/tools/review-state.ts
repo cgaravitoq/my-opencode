@@ -18,6 +18,7 @@ type ArchivedCycle = {
   startedAt: string
   archivedAt: string
   passes: PassEntry[]
+  swarmInvocations: number
   publishVerdict?: Verdict
 }
 
@@ -179,6 +180,7 @@ export default tool({
               startedAt: existing.startedAt,
               archivedAt: now,
               passes: existing.passes,
+              swarmInvocations: existing.swarmInvocations,
               publishVerdict: existing.publishVerdict,
             },
           ],
