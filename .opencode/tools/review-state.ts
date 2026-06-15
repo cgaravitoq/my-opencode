@@ -14,6 +14,13 @@ type PassEntry = {
   nextAction: NextAction
 }
 
+type ArchivedCycle = {
+  startedAt: string
+  archivedAt: string
+  passes: PassEntry[]
+  publishVerdict?: Verdict
+}
+
 type State = {
   branch: string
   startedAt: string
@@ -21,6 +28,7 @@ type State = {
   publishAuthorized: boolean
   swarmInvocations: number
   publishVerdict?: Verdict
+  cycles?: ArchivedCycle[]
 }
 
 type Action = "start" | "record_pass" | "request_publish" | "record_swarm" | "read"
@@ -81,6 +89,7 @@ async function readState(filePath: string): Promise<State | null> {
       publishAuthorized: parsed.publishAuthorized,
       swarmInvocations: typeof parsed.swarmInvocations === "number" ? parsed.swarmInvocations : 0,
       publishVerdict: parsed.publishVerdict,
+      cycles: Array.isArray(parsed.cycles) ? (parsed.cycles as ArchivedCycle[]) : undefined,
     }
   } catch (error) {
     throw new Error(`corrupted state file at ${filePath} — delete it to reset the loop`)
@@ -153,7 +162,29 @@ export default tool({
     if (action === "start") {
       const existing = await readState(filePath)
       if (existing !== null) {
-        return JSON.stringify({ ok: true, state: existing })
+        if (existing.publishAuthorized !== true) {
+          return JSON.stringify({ ok: true, state: existing })
+        }
+
+        const now = new Date().toISOString()
+        const state: State = {
+          branch: args.branch,
+          startedAt: now,
+          passes: [],
+          publishAuthorized: false,
+          swarmInvocations: 0,
+          cycles: [
+            ...(existing.cycles ?? []),
+            {
+              startedAt: existing.startedAt,
+              archivedAt: now,
+              passes: existing.passes,
+              publishVerdict: existing.publishVerdict,
+            },
+          ],
+        }
+        await writeState(filePath, state)
+        return JSON.stringify({ ok: true, state })
       }
 
       const state: State = {
@@ -162,6 +193,7 @@ export default tool({
         passes: [],
         publishAuthorized: false,
         swarmInvocations: 0,
+        cycles: [],
       }
       await writeState(filePath, state)
       return JSON.stringify({ ok: true, state })
