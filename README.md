@@ -10,7 +10,7 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 ├── AGENTS.md                  # Opinionated global rules loaded into every agent
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
-│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) — GPT-5.5 fast xhigh
+│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) — GPT-5.5 high
 │   ├── coder.md               # Primary fast-path agent for trivial changes — Opus 4.8 max
 │   ├── exec.md                # Subagent: implementer driven by pipeline-execution — GPT-5.5
 │   ├── reviewer.md            # Subagent: review-fix loop owner + PR opener — Opus 4.8 medium
@@ -126,7 +126,7 @@ The pipeline subagents are invoked by `pipeline-execution` (not the architect di
 
 | Agent | Mode | Model | Lab | Specialty |
 |---|---|---|---|---|
-| `architect` | primary | GPT-5.5 fast (xhigh) | OpenAI | Orchestrator. Per-repo GitHub Issues bundle aware. |
+| `architect` | primary | GPT-5.5 (high) | OpenAI | Orchestrator. Per-repo GitHub Issues bundle aware. |
 | `coder` | primary | Claude Sonnet 4.6 (medium) | Anthropic | Fast-path coder for trivial changes. |
 | `exec` | subagent | GPT-5.5 (low) | OpenAI | Implementer (invoked via `pipeline-execution`). |
 | `reviewer` | subagent | Claude Opus 4.8 (medium) | Anthropic | Review-fix loop owner + PR opener. |
@@ -150,7 +150,7 @@ pipeline-execution (skill)
             └─ open draft PR with `hitl` | `hitl-blocked` label
 ```
 
-Diversity by design: planner (OpenAI GPT-5.5 fast), executor (OpenAI GPT-5.5), reviewer orchestrator (Anthropic Opus) + a DeepSeek swarm (V4 Flash for fast smoke checks, V4 Pro for architecture, deep reasoning, and 1M-context cross-file review). Three labs (Anthropic, OpenAI, DeepSeek) avoid shared blind spots while keeping costs low.
+Diversity by design: planner (OpenAI GPT-5.5), executor (OpenAI GPT-5.5), reviewer orchestrator (Anthropic Opus) + a DeepSeek swarm (V4 Flash for fast smoke checks, V4 Pro for architecture, deep reasoning, and 1M-context cross-file review). Three labs (Anthropic, OpenAI, DeepSeek) avoid shared blind spots while keeping costs low.
 
 ### Publish gate (`.opencode/plugins/` + `.opencode/tools/`)
 
