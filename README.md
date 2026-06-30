@@ -11,9 +11,9 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
 │   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) — GPT-5.5 high
-│   ├── coder.md               # Primary fast-path agent for trivial changes — Opus 4.8 max
+│   ├── coder.md               # Primary fast-path agent for trivial changes — Sonnet 4.6 medium
 │   ├── exec.md                # Subagent: implementer driven by pipeline-execution — GPT-5.5
-│   ├── reviewer.md            # Subagent: review-fix loop owner + PR opener — Opus 4.8 medium
+│   ├── reviewer.md            # Default agent (mode: all): review-fix loop owner + PR opener — Opus 4.8 medium
 │   ├── fixer.md               # Subagent: applies blocker deltas from reviewer — GPT-5.5
 │   └── reviewer-*.md          # Four read-only swarm reviewers
 ├── skills/                    # Global skills; also installable per repo with `bunx skills add ... --all`
@@ -113,15 +113,15 @@ bun run install-skills /path/to/target-repo
 
 ### Agents
 
-Two primary agents — switch with **Tab** in the TUI:
+The **default agent is `reviewer`** (`mode: all`): open a fresh tab and you land directly in the swarm-review/fix/loop. Switch agents with **Tab** in the TUI:
 
+- `reviewer` — **default**, and also the pipeline's review-fix loop owner. Invoked directly in a tab it runs *interactive mode* (resolves repo/branch/base itself, defaults to `audit-only`, opens a PR only when you ask). Invoked by `pipeline-execution` it runs *caller mode* (full swarm + fixer loop, final verify gate, draft PR).
 - `architect` — orchestrator. Auto-detects the per-repo GitHub Issues bundle if present, falls back to ad-hoc otherwise. All code work goes through the global `pipeline-execution` skill.
 - `coder` — fast path for trivial changes (one-line fixes, renames, doc tweaks). Optionally delegates to the `reviewer-*` swarm via the `swarm-review` skill.
 
-The pipeline subagents are invoked by `pipeline-execution` (not the architect directly):
+The other pipeline subagents are invoked by `pipeline-execution` (not the architect directly):
 
 - `exec` — implementer. Commits one task per call to the parent branch.
-- `reviewer` — review-fix loop owner. Invokes swarm + fixer, runs final verify gate, opens the draft PR.
 - `fixer` — applies blocker deltas. Surgical only.
 
 | Agent | Mode | Model | Lab | Specialty |
@@ -129,7 +129,7 @@ The pipeline subagents are invoked by `pipeline-execution` (not the architect di
 | `architect` | primary | GPT-5.5 (high) | OpenAI | Orchestrator. Per-repo GitHub Issues bundle aware. |
 | `coder` | primary | Claude Sonnet 4.6 (medium) | Anthropic | Fast-path coder for trivial changes. |
 | `exec` | subagent | GPT-5.5 (low) | OpenAI | Implementer (invoked via `pipeline-execution`). |
-| `reviewer` | subagent | Claude Opus 4.8 (medium) | Anthropic | Review-fix loop owner + PR opener. |
+| `reviewer` | **all (default)** | Claude Opus 4.8 (medium) | Anthropic | Default agent; review-fix loop owner + PR opener. |
 | `fixer` | subagent | GPT-5.5 (medium) | OpenAI | Applies blocker deltas from reviewer. |
 | `reviewer-quick` | subagent | DeepSeek V4 Flash | DeepSeek | Fast first-pass: typos, copy-paste errors. |
 | `reviewer-arch` | subagent | DeepSeek V4 Pro | DeepSeek | Architecture, design patterns, abstractions. |
