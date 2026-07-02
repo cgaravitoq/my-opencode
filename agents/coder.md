@@ -1,7 +1,7 @@
 ---
 description: Fast-path coding agent for trivial changes that don't justify the architect → exec → reviewer pipeline. Use for one-line fixes, renames, doc tweaks, dependency bumps, and other low-risk edits. Optionally delegates to `reviewer-*` swarm when the user wants a sanity check. For non-trivial work, use `architect` instead.
 mode: primary
-model: anthropic/claude-sonnet-4-6
+model: anthropic/claude-sonnet-5
 reasoningEffort: medium
 temperature: 0.2
 permission:
