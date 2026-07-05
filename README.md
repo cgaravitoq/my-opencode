@@ -10,10 +10,10 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 ├── AGENTS.md                  # Opinionated global rules loaded into every agent
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
-│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) - Fable 5 high
+│   ├── architect.md           # Primary orchestrator (GitHub-Issues-aware + ad-hoc) - Opus 4.8 high
 │   ├── coder.md               # Primary fast-path agent for trivial changes - Sonnet 5 medium
 │   ├── exec.md                # Subagent: implementer driven by pipeline-execution - GPT-5.5
-│   ├── reviewer.md            # Default agent (mode: all): review-fix loop owner + PR opener - Fable 5 medium
+│   ├── reviewer.md            # Default agent (mode: all): review-fix loop owner + PR opener - Sonnet 5 medium
 │   ├── fixer.md               # Subagent: applies blocker deltas from reviewer - GPT-5.5
 │   └── reviewer-*.md          # Four read-only swarm reviewers
 ├── skills/                    # Global skills; also installable per repo with `bunx skills add ... --all`
@@ -71,7 +71,7 @@ opencode
 opencode
 # in the TUI:
 /agents    # should list: architect, coder, exec, reviewer, fixer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick
-/models    # should include anthropic/claude-fable-5, anthropic/claude-opus-4-8, anthropic/claude-sonnet-5, openai/gpt-5.5, opencode-go/deepseek-v4-flash, opencode-go/minimax-m3
+/models    # should include anthropic/claude-opus-4-8, anthropic/claude-sonnet-5, openai/gpt-5.5, opencode-go/deepseek-v4-flash, opencode-go/minimax-m3
 ```
 
 ## Install skills into the current repo
@@ -134,10 +134,10 @@ The other pipeline subagents are invoked by `pipeline-execution` (not the archit
 
 | Agent | Mode | Model | Lab | Specialty |
 |---|---|---|---|---|
-| `architect` | primary | Claude Fable 5 (high) | Anthropic | Orchestrator. Per-repo GitHub Issues bundle aware. |
+| `architect` | primary | Claude Opus 4.8 (high) | Anthropic | Orchestrator. Per-repo GitHub Issues bundle aware. |
 | `coder` | primary | Claude Sonnet 5 (medium) | Anthropic | Fast-path coder for trivial changes. |
 | `exec` | subagent | GPT-5.5 (low) | OpenAI | Implementer (invoked via `pipeline-execution`). |
-| `reviewer` | **all (default)** | Claude Fable 5 (medium) | Anthropic | Default agent; review-fix loop owner + PR opener. |
+| `reviewer` | **all (default)** | Claude Sonnet 5 (medium) | Anthropic | Default agent; review-fix loop owner + PR opener. |
 | `fixer` | subagent | GPT-5.5 (medium) | OpenAI | Applies blocker deltas from reviewer. |
 | `reviewer-quick` | subagent | DeepSeek V4 Flash | DeepSeek | Fast first-pass: typos, copy-paste errors. |
 | `reviewer-arch` | subagent | MiniMax M3 | MiniMax | Architecture, design patterns, abstractions. |
@@ -151,14 +151,14 @@ The single shared implementation pipeline. Tracker-agnostic. Used by the archite
 ```text
 pipeline-execution (skill)
   ├─ task → exec (GPT-5.5)               implement task on parent branch
-  └─ task → reviewer (Fable 5 medium)
+  └─ task → reviewer (Sonnet 5 medium)
             ├─ task → reviewer-* (risk-selected, parallel)   audit
             ├─ task → fixer (GPT-5.5) ← loop ≤3
             └─ push parent branch
             └─ open PR with `approved` | `hitl` label
 ```
 
-Diversity by design: planner (Anthropic Fable 5), executor (OpenAI GPT-5.5), reviewer orchestrator (Anthropic Fable 5) + selected OpenCode Go reviewers (DeepSeek V4 Flash for fast smoke checks, MiniMax M3 for architecture, deep reasoning, and bounded cross-file review).
+Diversity by design: planner (Anthropic Opus 4.8), executor (OpenAI GPT-5.5), reviewer orchestrator (Anthropic Sonnet 5) + selected OpenCode Go reviewers (DeepSeek V4 Flash for fast smoke checks, MiniMax M3 for architecture, deep reasoning, and bounded cross-file review).
 Four labs (Anthropic, OpenAI, DeepSeek, MiniMax) avoid shared blind spots while keeping costs low.
 
 PR labels are the merge contract:
