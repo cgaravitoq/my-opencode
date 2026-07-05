@@ -18,32 +18,27 @@ permission:
   bash:
     "*": deny
     # Git read + push (push gated by review-state plugin)
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status*": allow
-    "git blame*": allow
-    "git branch*": allow
+    "git *": allow
     "git push*": allow
     # GitHub PR + label management
-    "gh pr create*": allow
-    "gh pr edit*": allow
-    "gh pr view*": allow
-    "gh pr list*": allow
-    "gh pr ready*": allow
-    "gh label list*": allow
-    "gh label create*": allow
+    "gh *": allow
     # Filesystem read
     "ls *": allow
     "wc *": allow
     "cat *": allow
     "head *": allow
     "tail *": allow
+    "sed *": allow
+    "awk *": allow
     "find *": allow
     "grep *": allow
     "rg *": allow
     "jq *": allow
     "tree *": allow
+    "pwd": allow
+    "pwd *": allow
+    "realpath *": allow
+    "dirname *": allow
     # Verify gate - test / build / lint / typecheck runners. These may write
     # build artifacts and test outputs to disk but must NOT edit source. The
     # reviewer's tools section denies write/edit/patch, which is the real guard;

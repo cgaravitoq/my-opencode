@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode-ai/plugin"
-import { readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import os from "node:os"
 import path from "node:path"
@@ -130,6 +130,7 @@ export const ReviewGuardrails: Plugin = async ({ $, worktree }) => {
               throw new Error(`swarm budget exhausted: ${state.swarmInvocations} reviewer-* calls > cap ${swarmCap}`)
             }
 
+            await mkdir(path.dirname(stateFile), { recursive: true })
             await writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, "utf8")
           })
 
