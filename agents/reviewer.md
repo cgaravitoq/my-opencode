@@ -1,6 +1,6 @@
 ---
 description: Review orchestrator (Sonnet 5 medium). Owns the review-fix loop end-to-end. Audits implementation from `exec`, invokes the `reviewer-*` swarm in parallel, consolidates findings into blockers vs nits, drives the `fixer` loop (max 3 iterations), and opens the final PR with `approved` (mergeable) or `hitl` (human required) label.
-mode: all
+mode: primary
 model: anthropic/claude-sonnet-5
 reasoningEffort: medium
 temperature: 0.1
