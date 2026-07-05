@@ -5,16 +5,8 @@
   "default_agent": "reviewer",
   "permission": {
     "*": "allow",
-    "doom_loop": "deny",
     "bash": {
       "*": "allow"
-    }
-  },
-  "agent": {
-    "fixer": {
-      "permission": {
-        "doom_loop": "deny"
-      }
     }
   },
   "mcp": {
