@@ -1,7 +1,7 @@
 ---
-description: Logic and edge-case reviewer (MiniMax M3). Invoke to audit correctness of changed code - edge cases, error paths, race conditions, off-by-ones, null/undefined handling. Fast cost-efficient deep reviewer for logic bugs the implementer missed.
+description: Logic and edge-case reviewer. Invoke to audit correctness of changed code - edge cases, error paths, race conditions, off-by-ones, null/undefined handling. Deep reviewer for logic bugs the implementer missed.
 mode: subagent
-model: opencode-go/minimax-m3
+model: opencode-go/deepseek-v4-pro
 reasoningEffort: medium
 temperature: 0.1
 steps: 12

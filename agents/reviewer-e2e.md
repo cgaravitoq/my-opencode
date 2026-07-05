@@ -1,5 +1,5 @@
 ---
-description: Bounded end-to-end and integration reviewer (MiniMax M3). Invoke for changes that affect public APIs/contracts, cross-package behavior, migrations, config/env/CLI shape, external integrations, or fixture contracts.
+description: Bounded end-to-end and integration reviewer. Invoke for changes that affect public APIs/contracts, cross-package behavior, migrations, config/env/CLI shape, external integrations, or fixture contracts.
 mode: subagent
 model: opencode-go/minimax-m3
 temperature: 0.1
