@@ -1,6 +1,6 @@
 {
   "name": "my-opencode",
-  "description": "Public OpenCode configuration with agents, skills, review guardrails, and a per-repo GitHub Issues workflow template.",
+  "description": "Public OpenCode configuration with a single review/fix/approve agent, swarm reviewers, review guardrails, and a per-repo GitHub Issues workflow template.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -17,7 +17,6 @@
   "scripts": {
     "setup": "bun scripts/cli.ts setup",
     "cleanup": "bun scripts/cli.ts cleanup",
-    "install-skills": "bun scripts/cli.ts install-skills",
     "install-issues-bundle": "bun scripts/cli.ts install-issues-bundle"
   },
   "dependencies": {

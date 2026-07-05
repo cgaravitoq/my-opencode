@@ -1,5 +1,5 @@
 ---
-description: Fast first-pass sanity check (DeepSeek V4 Flash). Invoke for quick smoke review on small/trivial changes, or as a pre-filter before spending quota on the heavier reviewers. Catches obvious bugs, syntax issues, and copy-paste errors in seconds.
+description: Fast first-pass sanity check. Invoke for quick smoke review on small/trivial changes, or as a pre-filter before spending quota on the heavier reviewers. Catches obvious bugs, syntax issues, and copy-paste errors in seconds.
 mode: subagent
 model: opencode-go/deepseek-v4-flash
 reasoningEffort: medium

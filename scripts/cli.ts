@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-import { spawn } from "node:child_process";
 import { existsSync, lstatSync, readlinkSync } from "node:fs";
 import { mkdir, readdir, rename, rm, symlink, cp } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -92,53 +91,6 @@ async function cleanup() {
   console.log("Cleanup complete.");
 }
 
-async function run(command: string, args: string[], cwd: string) {
-  await new Promise<void>((resolveRun, reject) => {
-    const child = spawn(command, args, { cwd, stdio: "inherit" });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolveRun();
-        return;
-      }
-      reject(new Error(`${command} ${args.join(" ")} exited with ${code}`));
-    });
-  });
-}
-
-async function installSkills(args: string[]) {
-  let copy = false;
-  let targetRepo: string | undefined;
-
-  for (const arg of args) {
-    if (arg === "--copy") {
-      copy = true;
-    } else if (arg === "-h" || arg === "--help") {
-      console.log("Usage: bun run install-skills [TARGET_REPO] [--copy]");
-      console.log("Equivalent public command: bunx skills add cgaravitoq/my-opencode --all");
-      return;
-    } else if (arg.startsWith("-")) {
-      console.error(`Unknown option: ${arg}`);
-      process.exit(2);
-    } else if (targetRepo) {
-      console.error("Multiple target repos given. Pass at most one.");
-      process.exit(2);
-    } else {
-      targetRepo = arg;
-    }
-  }
-
-  targetRepo = resolve(targetRepo ?? process.cwd());
-  if (!existsSync(targetRepo)) {
-    console.error(`Target path does not exist: ${targetRepo}`);
-    process.exit(1);
-  }
-
-  const addArgs = ["skills", "add", REPO_DIR, "--all"];
-  if (copy) addArgs.push("--copy");
-  await run("bunx", addArgs, targetRepo);
-}
-
 async function installIssuesBundle(args: string[]) {
   let force = false;
   let targetRepo: string | undefined;
@@ -196,13 +148,10 @@ switch (command) {
   case "cleanup":
     await cleanup();
     break;
-  case "install-skills":
-    await installSkills(rest);
-    break;
   case "install-issues-bundle":
     await installIssuesBundle(rest);
     break;
   default:
-    console.error("Usage: bun scripts/cli.ts <setup|cleanup|install-skills|install-issues-bundle> [args]");
+    console.error("Usage: bun scripts/cli.ts <setup|cleanup|install-issues-bundle> [args]");
     process.exit(2);
 }

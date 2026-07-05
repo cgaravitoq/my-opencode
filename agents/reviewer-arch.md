@@ -1,7 +1,7 @@
 ---
-description: Architecture and design reviewer (MiniMax M3). Invoke after non-trivial implementation to audit design patterns, module boundaries, abstractions, and code structure. Fast cost-efficient multi-file architectural analysis.
+description: Architecture and design reviewer. Invoke after non-trivial implementation to audit design patterns, module boundaries, abstractions, and code structure.
 mode: subagent
-model: opencode-go/minimax-m3
+model: opencode-go/glm-5.2
 reasoningEffort: medium
 temperature: 0.1
 steps: 10
