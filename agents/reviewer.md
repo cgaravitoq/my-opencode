@@ -271,7 +271,8 @@ Use `hitl` for every exception: unresolved blockers, loop exhaustion, duplicate 
 
 - Call `review-state({ action: 'request_publish', verdict })` first. Without this the plugin will reject `git push`, `gh pr create`, and `gh pr edit`.
 - `git push -u origin <branch>` (the first push). Subsequent invocations: just `git push`.
-- `gh pr view --json state,url --head <branch>` first - if a draft PR already exists, edit it instead of creating a duplicate.
+- `gh pr list --head <branch> --state open --json number,url,state,isDraft` first.
+  If it returns a PR, edit it instead of creating a duplicate.
 - For `approved`, create a ready PR: `gh pr create --title "<title>" --body "<body>"` (HEREDOC for the body).
   If an existing PR is draft, run `gh pr ready <number>`.
 - For `hitl`, create or keep a draft PR: `gh pr create --draft --title "<title>" --body "<body>"` (HEREDOC for the body).
