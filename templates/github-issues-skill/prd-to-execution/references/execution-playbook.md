@@ -12,7 +12,7 @@ idea-to-issue -> [project-to-draft] -> draft-to-prd -> prd-to-execution
 
 ## Repo Resolution
 
-The single source of truth for repo resolution is `../../SKILL.md` (Multi-Repo Resolution section). This playbook does not redefine the order — it only adds execution-time concerns.
+The single source of truth for repo resolution is `../../SKILL.md` (Multi-Repo Resolution section). This playbook does not redefine the order - it only adds execution-time concerns.
 
 Persistence format (after resolution):
 
@@ -30,9 +30,9 @@ The `Local` path is machine-specific. On a new machine, re-resolve and overwrite
 Before running any `git` or `gh` command, confirm the resolved local path is a usable repo:
 
 1. **Path exists**: `ls <local-path>`. If not, ask the user to re-resolve.
-2. **Is a git repo**: `git -C <local-path> rev-parse --git-dir`. If not, stop and report — the resolved path is not a git checkout.
+2. **Is a git repo**: `git -C <local-path> rev-parse --git-dir`. If not, stop and report - the resolved path is not a git checkout.
 3. **Has a remote**: `git -C <local-path> remote get-url origin`. If empty (e.g. fresh `git init`), stop and ask whether to add `origin` or pick a different path.
-4. **Remote matches `## Repo`'s GitHub URL** (compare `nameWithOwner`, ignore `.git` suffix, ignore `https`/`ssh` differences). If they differ, stop and ask — do not push to the wrong repo.
+4. **Remote matches `## Repo`'s GitHub URL** (compare `nameWithOwner`, ignore `.git` suffix, ignore `https`/`ssh` differences). If they differ, stop and ask - do not push to the wrong repo.
 5. **Working tree is clean enough** to start a new branch (no uncommitted changes the user did not authorize). If dirty, stop and surface the diff.
 6. **`gh` auth is valid** for this repo: `gh repo view <owner/name> --json nameWithOwner,url`. If it errors with auth/permission, stop and ask the user to re-auth.
 
@@ -89,7 +89,7 @@ Files changed: src/auth/jwt.ts, src/auth/jwt.test.ts, src/middleware/auth.ts
 | ---------------------------------------------------------------------------------------- | --------------- |
 | All task checkboxes are `[ ]`                                                            | `status:prd`     |
 | Any checkbox is `[-]` or any task has a non-empty `Commit`                               | `status:running` |
-| Every checkbox is `[x]` AND `## Implementation` has Branch + Commit + PR + Verify filled | `status:hitl`    |
+| Every checkbox is `[x]` AND `## Implementation` has Branch + Commit + PR + Verify + PR label filled | `status:hitl`    |
 | PR merged (issue closed via `Closes #N`) or human flips it manually                      | `status:ready`   |
 
 The agent owns the first three transitions (each via a single `gh issue edit --remove-label X --add-label Y`). The human (or the merge + repo automation) owns `status:ready`.
@@ -120,10 +120,12 @@ After all per-task work is committed, invoke `pipeline-execution` once more for 
 - `tracker_url`: GitHub issue URL.
 - `pr_title`: conventional commit summary referencing the issue (`feat(scope): summary (#42)` or `feat(scope): summary (owner/repo#42)`).
 - `pr_summary`: one-line intent built from `## What`. Must include `Closes <owner/repo#N>` (or `Closes #<N>` same-repo) so the merge auto-closes the issue.
-- `pr_label_clean`: `hitl`.
-- `pr_label_blocked`: `hitl-blocked`.
+- `pr_label_approved`: `approved`.
+- `pr_label_human`: `hitl`.
 
-The reviewer (inside `pipeline-execution`) runs the swarm, drives the fixer loop (≤3 passes), runs the final verify gate, pushes the branch, and opens the draft PR.
+The reviewer (inside `pipeline-execution`) runs the swarm, drives the fixer loop (≤3 passes), runs the final verify gate, pushes the branch, and opens the PR.
+Approved PRs are ready for merge.
+Human-required PRs stay draft with the `hitl` label.
 
 ## Parallel Execution Rules
 
@@ -139,17 +141,18 @@ Do not parallelize when:
 - One task's output is another's input (sequential dependency).
 - The PRD has only 1–2 tasks (overhead exceeds benefit).
 
-The PRD-level integration call is **always** sequential — invoked once after all per-task work is committed.
+The PRD-level integration call is **always** sequential - invoked once after all per-task work is committed.
 
 ## Verification
 
 Three layers, all owned downstream by `pipeline-execution`:
 
-1. **Per-task `Verify`** — `exec` runs the task's verify before claiming done.
-2. **Pre-review verify** — `pipeline-execution` runs the integration `verify_command` over the combined change before handing to the reviewer.
-3. **Final verify gate** — the reviewer re-runs `verify_command` after the fixer loop closes, before pushing and opening the PR.
+1. **Per-task `Verify`** - `exec` runs the task's verify before claiming done.
+2. **Pre-review verify** - `pipeline-execution` runs the integration `verify_command` over the combined change before handing to the reviewer.
+3. **Final verify gate** - the reviewer re-runs `verify_command` after the fixer loop closes, before pushing and opening the PR.
 
-This skill does not run any verify directly. It only checks that `pipeline-execution`'s report shows verify passed before flipping the parent to `status:hitl`.
+This skill does not run any verify directly.
+It only checks that `pipeline-execution`'s report shows verify passed and a PR label was applied before flipping the parent to `status:hitl`.
 
 ## End-To-End Dry Run
 
@@ -159,7 +162,7 @@ When validating the workflow on a real PRD:
 - No GitHub sub-issues created. All task progress in checkbox state, inline `Status`/`Commit`, and issue comments.
 - Label transitions followed the checkbox aggregate: `status:prd` → `status:running` (any `[-]`) → `status:hitl` (all `[x]` + implementation evidence).
 - Repo work stayed on one `<username>/<issue-number>-<short-slug>` branch.
-- Verification output was read before claiming `status:hitl`.
+- Verification output and PR label were read before claiming `status:hitl`.
 - Final issue update leaves enough evidence in body + comments that a developer could continue without reading the chat transcript.
 - PR body includes `Closes <owner/repo#N>` so the merge auto-closes the issue.
 
@@ -168,10 +171,10 @@ When validating the workflow on a real PRD:
 - Running `git` from the workspace root when the workspace root is not the target repo.
 - Trusting a `Local:` path persisted from another machine without verifying it exists.
 - Pushing to a remote whose `nameWithOwner` does not match `## Repo`'s GitHub URL.
-- Caching the issue body across `pipeline-execution` results — re-fetch before each write to avoid clobbering parallel updates.
+- Caching the issue body across `pipeline-execution` results - re-fetch before each write to avoid clobbering parallel updates.
 - Persisting a commit hash to the issue body without verifying it exists with `git log --oneline -1 <hash>`.
 - Silently retrying a `pipeline-execution` call that returned a blocker. Surface it as a `Blocker:` and stop.
-- Silently retrying when `pipeline-execution` reports `hitl-blocked`. Surface residual blockers; the human decides.
+- Silently retrying when `pipeline-execution` reports `hitl`. Surface residual blockers or uncertainty; the human decides.
 - Invoking `exec`, `reviewer`, `fixer`, or any `reviewer-*` directly from this skill. Always go through `pipeline-execution`.
 - Bypassing `pipeline-execution` with a manual `git push` + `gh pr create`. The label, the review loop summary, and the verify gate are part of the contract.
 - Restarting an in-flight PRD without checking `## Implementation` first. Detect resume scenarios and ask the user.
@@ -179,5 +182,5 @@ When validating the workflow on a real PRD:
 - Skipping the integration `pipeline-execution` call because all per-task verifies passed.
 - Moving to `status:hitl` before `## Implementation` has the PR URL **and** the label.
 - Committing files the PRD did not touch ("while I'm here" cleanups).
-- Forgetting `Closes <owner/repo#N>` in the PR body — without it the merge does not auto-close the issue, leaving the bookkeeping stale.
+- Forgetting `Closes <owner/repo#N>` in the PR body - without it the merge does not auto-close the issue, leaving the bookkeeping stale.
 - Leaving the issue with two `status:*` labels or none. Always swap atomically.

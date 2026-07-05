@@ -40,7 +40,7 @@ If an issue carries a `status:*` label not in the mapping, the architect treats 
 
 - Do not add new canonical names. The flow has six states by design.
 - If your repo has additional terminal labels (`status:cancelled`, `status:duplicate`, `status:wont-fix`), they are not in the flow. The architect treats them as terminal: report and stop, do not route.
-- Per-repo mapping is supported but only one mapping per file. If different teams share this repo and need different label names, you have bigger problems — pick one set and stick to it.
+- Per-repo mapping is supported but only one mapping per file. If different teams share this repo and need different label names, you have bigger problems - pick one set and stick to it.
 
 ## Seeding labels
 
@@ -56,8 +56,9 @@ for t in feature bug refactor chore docs infra perf test; do
   gh label create "type:$t" --color "cccccc" --force
 done
 
-gh label create "hitl"         --color "5319e7" --force  # PR label: clean
-gh label create "hitl-blocked" --color "b60205" --force  # PR label: loop exhausted
+gh label create "approved" --color "0e8a16" --force  # PR label: automated review says mergeable
+gh label create "hitl"     --color "b60205" --force  # PR label: human review required
 ```
 
-`hitl` and `hitl-blocked` (no `status:` prefix) are PR labels applied by the reviewer inside `pipeline-execution`. They are intentionally separate from issue `status:*` labels — a PR can carry `hitl-blocked` while its parent issue carries `status:hitl`.
+`approved` and `hitl` (no `status:` prefix) are PR labels applied by the reviewer inside `pipeline-execution`.
+They are intentionally separate from issue `status:*` labels: a PR can carry `approved` while its parent issue carries `status:hitl` until the PR merges.

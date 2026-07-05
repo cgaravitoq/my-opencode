@@ -100,12 +100,40 @@ describe("review-state tool", () => {
     expect(p2.nextAction).toBe("abort_duplicate")
   })
 
-  test("request_publish rejects clean verdict when no fix pass recorded", async () => {
+  test("request_publish allows clean verdict with no fix pass recorded", async () => {
     await reviewState.execute({ branch: "feature/c", action: "start" }, context)
 
-    expect(
-      reviewState.execute({ branch: "feature/c", action: "request_publish", verdict: "clean" }, context),
-    ).rejects.toThrow(/at least one resolved pass/)
+    const publish = parse(
+      await reviewState.execute({ branch: "feature/c", action: "request_publish", verdict: "clean" }, context),
+    )
+    expect(publish.authorized).toBe(true)
+    expect(publish.verdict).toBe("clean")
+  })
+
+  test("request_publish rejects clean verdict after unresolved review loop", async () => {
+    await reviewState.execute({ branch: "feature/unresolved", action: "start" }, context)
+    await reviewState.execute(
+      { branch: "feature/unresolved", action: "record_pass", pass: 1, blockersHash: "hashA" },
+      context,
+    )
+    await reviewState.execute(
+      { branch: "feature/unresolved", action: "record_pass", pass: 2, blockersHash: "hashA" },
+      context,
+    )
+
+    await expect(
+      reviewState.execute({ branch: "feature/unresolved", action: "request_publish", verdict: "clean" }, context),
+    ).rejects.toThrow(/unresolved review loop/)
+  })
+
+  test("request_publish allows blocked verdict with no fix pass recorded", async () => {
+    await reviewState.execute({ branch: "feature/hitl", action: "start" }, context)
+
+    const publish = parse(
+      await reviewState.execute({ branch: "feature/hitl", action: "request_publish", verdict: "blocked" }, context),
+    )
+    expect(publish.authorized).toBe(true)
+    expect(publish.verdict).toBe("blocked")
   })
 
   test("branch sanitization rejects '..'", async () => {
