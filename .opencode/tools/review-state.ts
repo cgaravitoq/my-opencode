@@ -80,7 +80,7 @@ async function readState(filePath: string): Promise<State | null> {
       !Array.isArray(parsed.passes) ||
       typeof parsed.publishAuthorized !== "boolean"
     ) {
-      throw new Error(`corrupted state file at ${filePath} — delete it to reset the loop`)
+      throw new Error(`corrupted state file at ${filePath} - delete it to reset the loop`)
     }
 
     return {
@@ -93,7 +93,7 @@ async function readState(filePath: string): Promise<State | null> {
       cycles: Array.isArray(parsed.cycles) ? (parsed.cycles as ArchivedCycle[]) : undefined,
     }
   } catch (error) {
-    throw new Error(`corrupted state file at ${filePath} — delete it to reset the loop`)
+    throw new Error(`corrupted state file at ${filePath} - delete it to reset the loop`)
   }
 }
 
@@ -136,6 +136,11 @@ function nextActionFor(pass: number, blockersHash: string, state: State): NextAc
   }
 
   return "fix"
+}
+
+function swarmCap() {
+  const configured = Number.parseInt(process.env.OPENCODE_REVIEW_SWARM_CAP ?? "", 10)
+  return Number.isInteger(configured) && configured > 0 ? configured : 8
 }
 
 export default tool({
@@ -233,7 +238,7 @@ export default tool({
 
     if (action === "request_publish") {
       if (state === null) {
-        throw new Error("no state — call start first")
+        throw new Error("no state - call start first")
       }
 
       const verdict = requireVerdict(args.verdict as Verdict | undefined)
@@ -269,6 +274,9 @@ export default tool({
       }
 
       state.swarmInvocations += 1
+      if (state.swarmInvocations > swarmCap()) {
+        throw new Error(`swarm budget exhausted: ${state.swarmInvocations} reviewer-* calls > cap ${swarmCap()}`)
+      }
       await writeState(filePath, state)
       return JSON.stringify({ ok: true, swarmInvocations: state.swarmInvocations, state })
     }

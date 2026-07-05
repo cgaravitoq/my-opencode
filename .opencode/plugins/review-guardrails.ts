@@ -15,7 +15,7 @@ type ReviewState = {
 const publishCommandPattern = /(^|\s)(git\s+push|gh\s+pr\s+create|gh\s+pr\s+edit)\b/
 const reviewerSubagentPattern = /^reviewer-(quick|arch|reasoning|e2e)$/
 const configuredSwarmCap = Number.parseInt(process.env.OPENCODE_REVIEW_SWARM_CAP ?? "", 10)
-const swarmCap = Number.isInteger(configuredSwarmCap) && configuredSwarmCap > 0 ? configuredSwarmCap : 32
+const swarmCap = Number.isInteger(configuredSwarmCap) && configuredSwarmCap > 0 ? configuredSwarmCap : 8
 const bypassEnabled = process.env.OPENCODE_REVIEW_BYPASS === "1"
 
 function parseBranchFromCommand(cmd: string): string | null {
@@ -108,7 +108,7 @@ export const ReviewGuardrails: Plugin = async ({ $, worktree }) => {
 
           if (state?.publishAuthorized !== true) {
             throw new Error(
-              `publish gated by review-state for branch '${branch}' — call review-state with action='request_publish' and verdict before git push, gh pr create, or gh pr edit (or set OPENCODE_REVIEW_BYPASS=1 for emergencies)`,
+              `publish gated by review-state for branch '${branch}' - call review-state with action='request_publish' and verdict before git push, gh pr create, or gh pr edit (or set OPENCODE_REVIEW_BYPASS=1 for emergencies)`,
             )
           }
         }
