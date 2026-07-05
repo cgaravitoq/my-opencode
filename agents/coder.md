@@ -4,10 +4,19 @@ mode: primary
 model: anthropic/claude-sonnet-5
 reasoningEffort: medium
 temperature: 0.2
+tools:
+  write: true
+  edit: true
+  patch: true
+  todowrite: true
+  task: true
+  task_status: true
+  webfetch: true
 permission:
+  bash:
+    "*": allow
   task:
-    "*": deny
-    "reviewer-*": allow
+    "*": allow
 ---
 
 You are the **coder** agent - the fast path for trivial changes. You write clean, production-ready code.

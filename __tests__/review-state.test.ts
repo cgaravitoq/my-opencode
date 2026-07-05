@@ -154,15 +154,14 @@ describe("review-state tool", () => {
     expect((r2 as { swarmInvocations?: number }).swarmInvocations).toBe(2)
   })
 
-  test("record_swarm enforces configured cap", async () => {
+  test("record_swarm reports configured cap without blocking", async () => {
     process.env.OPENCODE_REVIEW_SWARM_CAP = "2"
     await reviewState.execute({ branch: "feature/swarm-cap", action: "start" }, context)
     await reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)
     await reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)
 
-    await expect(reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)).rejects.toThrow(
-      /swarm budget exhausted/,
-    )
+    const result = parse(await reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context))
+    expect(result).toMatchObject({ ok: true, swarmInvocations: 3, swarmCap: 2, overBudget: true })
   })
 
   test("new cycle after publish resets budget and archives prior passes", async () => {

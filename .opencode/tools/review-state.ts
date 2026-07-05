@@ -266,11 +266,14 @@ export default tool({
       }
 
       state.swarmInvocations += 1
-      if (state.swarmInvocations > swarmCap()) {
-        throw new Error(`swarm budget exhausted: ${state.swarmInvocations} reviewer-* calls > cap ${swarmCap()}`)
-      }
       await writeState(filePath, state)
-      return JSON.stringify({ ok: true, swarmInvocations: state.swarmInvocations, state })
+      return JSON.stringify({
+        ok: true,
+        swarmInvocations: state.swarmInvocations,
+        swarmCap: swarmCap(),
+        overBudget: state.swarmInvocations > swarmCap(),
+        state,
+      })
     }
 
     throw new Error(`unsupported action: ${action}`)

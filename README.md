@@ -1,6 +1,6 @@
 # my-opencode
 
-Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agent coding workflow: global agents, reusable skills, review guardrails, and a per-repo GitHub Issues bundle template. Clone it on any machine, run the installer, and your OpenCode setup is ready.
+Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agent coding workflow: global agents, reusable skills, review-state observability, and a per-repo GitHub Issues bundle template. Clone it on any machine, run the installer, and your OpenCode setup is ready.
 
 ## What's inside
 
@@ -15,7 +15,7 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 │   ├── exec.md                # Subagent: implementer driven by pipeline-execution - GPT-5.5
 │   ├── reviewer.md            # Default agent (mode: all): review-fix loop owner + PR opener - Sonnet 5 medium
 │   ├── fixer.md               # Subagent: applies blocker deltas from reviewer - GPT-5.5
-│   └── reviewer-*.md          # Four read-only swarm reviewers
+│   └── reviewer-*.md          # Four specialized swarm reviewers
 ├── skills/                    # Global skills; also installable per repo with `bunx skills add ... --all`
 │   ├── pipeline-execution/    # Generic exec → reviewer → fixer → PR pipeline (tracker-agnostic)
 │   └── swarm-review/          # Multi-model parallel code review (used by `coder` fast path)
@@ -25,7 +25,7 @@ Public, versioned [OpenCode](https://opencode.ai) configuration for a multi-agen
 │   └── cli.ts                 # Bun CLI: `setup`, `cleanup`, `install-skills`, `install-issues-bundle`
 ├── .opencode/
 │   ├── plugins/               # Global OpenCode plugins symlinked into ~/.config/opencode/plugins/
-│   │   └── review-guardrails.ts # Publish gate: blocks `git push` / `gh pr create` until review-state authorizes
+│   │   └── review-guardrails.ts # Observability plugin: records reviewer swarm invocations
 │   └── tools/                 # Global OpenCode tools symlinked into ~/.config/opencode/tools/
 │       └── review-state.ts    # Custom tool owning review-fix loop state (consumed by `agents/reviewer.md`)
 └── .gitignore
@@ -166,12 +166,13 @@ PR labels are the merge contract:
 - `approved` means the automated review loop found no remaining blockers, the final verify gate passed, and the PR is ready to merge once repository checks are green.
 - `hitl` means human review is required because blockers, uncertainty, disagreement, or missing verification remain.
 
-### Publish gate (`.opencode/plugins/` + `.opencode/tools/`)
+### Review state (`.opencode/plugins/` + `.opencode/tools/`)
 
 The loop above is enforced by two global files symlinked into `~/.config/opencode/` by the installer.
-`.opencode/plugins/review-guardrails.ts` intercepts `git push` and `gh pr create` and blocks them until the branch has been authorized - that's why pushes can error with `publish gated by review-state for branch <name>`.
-Authorization lives in `.opencode/tools/review-state.ts`, the custom tool the `reviewer` agent uses to track the review-fix loop and mark a branch ready to publish (see `agents/reviewer.md` "Loop State (hard gate)").
-The loop budget (3 fixer passes + swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review.
+`.opencode/tools/review-state.ts` is the custom tool the `reviewer` agent uses to track the review-fix loop and mark a branch ready to publish (see `agents/reviewer.md` "Loop State").
+`.opencode/plugins/review-guardrails.ts` records `reviewer-*` swarm invocations in the same state file for observability.
+It does not block bash, task, push, or PR commands.
+The loop budget (3 fixer passes + advisory swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review.
 Add your own plugins or tools by dropping `.ts`/`.js` files into these directories and re-running `bun run setup`.
 
 ### Context window tuning
@@ -259,19 +260,9 @@ export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
 export OPENCODE_REVIEW_SWARM_CAP=8
 ```
 
-The swarm cap is a guardrail against runaway reviewer loops.
-`8` supports one explicit full swarm plus follow-up quick checks, while failing fast when the reviewer starts looping.
-
-### Emergency bypass
-
-If the `review-guardrails` plugin blocks a `git push` / `gh pr create` due to corrupted or stale loop state (e.g. an interrupted process that left `review-state` mid-write), set `OPENCODE_REVIEW_BYPASS=1` for the current process to skip the publish gate entirely:
-
-```bash
-OPENCODE_REVIEW_BYPASS=1 git push
-```
-
-Use it only as an escape hatch - bypassing the gate also disables the swarm-budget cap, so a runaway reviewer loop can keep spawning subagents past `OPENCODE_REVIEW_SWARM_CAP`.
-Prefer inspecting or deleting the offending state file first: `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`); manual reset is now mostly for corrupted or stale state because normal new cycles reset themselves on `start` after publish.
+The swarm cap is advisory.
+When the counter exceeds it, `review-state.record_swarm` returns `overBudget: true` instead of blocking the agent.
+Inspect state at `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`) when debugging loop behavior.
 
 ## MCPs
 
