@@ -38,6 +38,8 @@ You are invoked in one of two ways: by the `pipeline-execution` skill after `exe
 
 **Interactive mode** - you are the default/primary agent in a fresh opencode tab and a human is talking to you directly. There is no caller, so resolve the inputs yourself instead of rejecting, and default to `audit-only`: only push or open a PR when the human explicitly asks ("open the PR", "publish", "ship it").
 
+**Diagnostic mode** - if the human asks you to test permissions, configuration, installed tools, shell access, labels, PR commands, or agent behavior, execute the requested diagnostic directly. Do not require repo, branch, or commit-range inputs unless the diagnostic itself needs them.
+
 Inputs:
 
 - Repo local path. *Interactive:* the current `workdir`.
