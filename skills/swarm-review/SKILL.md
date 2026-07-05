@@ -1,6 +1,6 @@
 ---
 name: swarm-review
-description: Multi-model parallel code review. Use when the user asks to review, audit, or get a second opinion on recent code changes. Delegates to four DeepSeek reviewer subagents in parallel, then consolidates findings into a prioritized summary.
+description: Risk-selected parallel code review. Use when the user asks to review, audit, or get a second opinion on recent code changes. Delegates to the smallest useful set of DeepSeek reviewer subagents in parallel, then consolidates findings into a prioritized summary.
 license: MIT
 metadata:
   author: cgaravitoq
@@ -9,7 +9,7 @@ metadata:
 
 # Swarm Review
 
-Run a parallel, multi-model code review on recent changes by delegating to four specialized reviewer subagents. The point of the swarm is **diversity of blind spots**: each reviewer has a narrow specialty and the roster mixes DeepSeek V4 Flash (fast smoke pass) with V4 Pro (deeper reasoning), so they catch issues a single pass misses.
+Run a parallel, risk-selected code review on recent changes by delegating to specialized reviewer subagents. The point of the swarm is **diversity of blind spots** without paying for irrelevant perspectives: each reviewer has a narrow specialty and the roster mixes DeepSeek V4 Flash (fast smoke pass) with V4 Pro (deeper reasoning).
 
 ## When to use
 
@@ -24,50 +24,55 @@ Activate this skill when:
 
 - Cosmetic changes (formatting, renames, comments). Burns Go quota for no value.
 - Single-line fixes or trivial typo corrections.
-- Code the user is still actively writing — wait until they pause.
+- Code the user is still actively writing - wait until they pause.
 - When the user asked a research/explanation question, not a review.
 
 If unsure, ask: "Want me to run the swarm review on this?" rather than burning quota silently.
 
 ## Reviewer roster
 
-Four read-only subagents are available via the `task` tool. None of them can write or edit files — they only analyze and report.
+Four read-only subagents are available via the `task` tool.
+None of them can write or edit files - they only analyze and report.
 
 | Subagent | Model | Lab | Specialty |
 |---|---|---|---|
 | `reviewer-quick` | DeepSeek V4 Flash | DeepSeek | Fast first-pass: obvious bugs, typos, copy-paste errors, dead code |
-| `reviewer-arch` | DeepSeek V4 Pro | DeepSeek | Architecture, design patterns, module boundaries, abstractions |
-| `reviewer-reasoning` | DeepSeek V4 Pro | DeepSeek | Logic correctness, edge cases, error paths, race conditions |
-| `reviewer-e2e` | DeepSeek V4 Pro (1M ctx) | DeepSeek | Cross-file impact, integration, breaking changes, side effects |
+| `reviewer-arch` | MiniMax M3 | MiniMax | Architecture, design patterns, module boundaries, abstractions |
+| `reviewer-reasoning` | MiniMax M3 | MiniMax | Logic correctness, edge cases, error paths, race conditions |
+| `reviewer-e2e` | MiniMax M3 | MiniMax | Bounded cross-file impact, integration, breaking changes, side effects |
 
 ## Selection logic
 
-Pick reviewers based on the change profile. Don't always run all four — match the tool to the work.
+Pick reviewers based on the change profile.
+Don't always run all four - match the tool to the work.
 
 ### Trivial change (one file, < 30 lines, simple logic)
-Run `reviewer-quick` only. One sub-second pass is enough.
+Run `reviewer-quick` only.
+One sub-second pass is enough.
 
 ### Standard change (single feature, single module)
 Run in parallel:
 - `reviewer-quick`
-- `reviewer-reasoning`
+- `reviewer-reasoning` only when executable logic, state transitions, error handling, or data transformations changed
 
-Skip `reviewer-arch` if no new abstractions/interfaces. Skip `reviewer-e2e` if no public API changes.
+Skip `reviewer-arch` if no new abstractions/interfaces.
+Skip `reviewer-e2e` if no public API changes.
 
 ### Non-trivial change (multi-file, refactor, new abstractions, or public API changes)
-Run all three deep reviewers in parallel:
-- `reviewer-arch`
-- `reviewer-reasoning`
-- `reviewer-e2e`
+Run at most two deep reviewers in parallel, selected by risk:
+- `reviewer-arch` for new abstractions, module boundaries, ownership boundaries, or design patterns.
+- `reviewer-reasoning` for executable logic, state transitions, error handling, concurrency, or data transformations.
+- `reviewer-e2e` for public APIs, cross-package contracts, migrations, env/config/CLI shape, external integrations, or fixture contracts.
 
-Skip `reviewer-quick` — the deep ones already cover its scope.
+Use `reviewer-quick` first if the diff is large but the concrete risk is unclear.
 
 ### When user explicitly says "lanza el swarm completo" / "full swarm"
-Run all four in parallel regardless of change size. User is paying for paranoia.
+Run all four in parallel regardless of change size.
 
 ## Invocation pattern
 
-Issue **multiple `task` calls with `background: true`** so they start immediately, then collect each result with `task_status(wait: true)`. Sequential blocking `task` calls waste wall-clock time and don't take advantage of the swarm.
+Issue **multiple `task` calls with `background: true`** so they start immediately, then collect each result with `task_status(wait: true)`.
+Sequential blocking `task` calls waste wall-clock time and don't take advantage of the swarm.
 
 Each `task` call should pass:
 
@@ -75,7 +80,8 @@ Each `task` call should pass:
 2. A `prompt` that includes:
    - What changed (point at files or paste the diff scope).
    - What to focus on (matching the reviewer's specialty).
-   - Any context the reviewer needs that they can't get from `git diff` alone.
+   - The risk signal that justified this reviewer.
+   - A boundary: inspect the diff first, then only the smallest surrounding code needed to prove or disprove a concrete issue.
 3. `background: true`.
 
 After launch:
@@ -94,7 +100,7 @@ Diff scope: last commit (use `git diff HEAD~1`).
 Focus on your specialty. Be specific with file:line citations. Use the output format from your system prompt.
 ```
 
-Don't paste full file contents — reviewers can read with their own tools. Be concise; their context window is theirs to fill.
+Don't paste full file contents - reviewers can read with their own tools. Be concise; their context window is theirs to fill.
 
 ## Output consolidation
 
@@ -119,7 +125,7 @@ Steps:
 Reviewers: <list which ones ran>
 
 ### Critical
-- (issue) — flagged by <reviewer(s)> at file:line
+- (issue) - flagged by <reviewer(s)> at file:line
 
 ### Important
 - ...
@@ -146,8 +152,8 @@ OpenCode Go limits apply to all four reviewers (they all use DeepSeek through th
 
 ## Failure modes to avoid
 
-- **Don't** invoke reviewers sequentially or without `background: true` — defeats the purpose.
+- **Don't** invoke reviewers sequentially or without `background: true` - defeats the purpose.
 - **Don't** paste massive code dumps into the reviewer prompt; they have their own read tools.
 - **Don't** apply fixes from a reviewer without showing the user first. The reviewer might be wrong.
-- **Don't** invoke reviewers for code you haven't yet committed/staged unless you tell them which files to look at — `git diff` won't show untracked files.
+- **Don't** invoke reviewers for code you haven't yet committed/staged unless you tell them which files to look at - `git diff` won't show untracked files.
 - **Don't** loop: if a reviewer flags something and you fix it, don't immediately re-run the swarm to validate the fix unless the user asks. That's how quota disappears.

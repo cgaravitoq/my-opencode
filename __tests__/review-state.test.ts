@@ -30,12 +30,15 @@ describe("review-state tool", () => {
   let worktree: string
   let context: ToolContext
   let originalXdg: string | undefined
+  let originalSwarmCap: string | undefined
 
   beforeEach(async () => {
     tmpRoot = await mkdtemp(path.join(os.tmpdir(), "review-state-test-"))
     worktree = path.join(tmpRoot, "worktree")
     originalXdg = process.env.XDG_STATE_HOME
+    originalSwarmCap = process.env.OPENCODE_REVIEW_SWARM_CAP
     process.env.XDG_STATE_HOME = tmpRoot
+    delete process.env.OPENCODE_REVIEW_SWARM_CAP
     context = makeContext(worktree)
   })
 
@@ -44,6 +47,11 @@ describe("review-state tool", () => {
       delete process.env.XDG_STATE_HOME
     } else {
       process.env.XDG_STATE_HOME = originalXdg
+    }
+    if (originalSwarmCap === undefined) {
+      delete process.env.OPENCODE_REVIEW_SWARM_CAP
+    } else {
+      process.env.OPENCODE_REVIEW_SWARM_CAP = originalSwarmCap
     }
     await rm(tmpRoot, { recursive: true, force: true })
   })
@@ -116,6 +124,17 @@ describe("review-state tool", () => {
     expect(r1).toMatchObject({ ok: true })
     const r2 = parse(await reviewState.execute({ branch: "feature/d", action: "record_swarm" }, context))
     expect((r2 as { swarmInvocations?: number }).swarmInvocations).toBe(2)
+  })
+
+  test("record_swarm enforces configured cap", async () => {
+    process.env.OPENCODE_REVIEW_SWARM_CAP = "2"
+    await reviewState.execute({ branch: "feature/swarm-cap", action: "start" }, context)
+    await reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)
+    await reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)
+
+    await expect(reviewState.execute({ branch: "feature/swarm-cap", action: "record_swarm" }, context)).rejects.toThrow(
+      /swarm budget exhausted/,
+    )
   })
 
   test("new cycle after publish resets budget and archives prior passes", async () => {
