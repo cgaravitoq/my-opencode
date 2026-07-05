@@ -16,14 +16,23 @@ permission:
   webfetch: allow
   bash:
     "*": deny
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status*": allow
-    "git blame*": allow
+    "git *": allow
     "ls *": allow
     "wc *": allow
+    "cat *": allow
+    "head *": allow
+    "tail *": allow
+    "sed *": allow
+    "awk *": allow
     "find *": allow
+    "grep *": allow
+    "rg *": allow
+    "jq *": allow
+    "tree *": allow
+    "pwd": allow
+    "pwd *": allow
+    "realpath *": allow
+    "dirname *": allow
 ---
 
 You are an end-to-end / integration reviewer. You do NOT write or modify code - you only analyze and report.
@@ -78,12 +87,12 @@ If you find nothing worth raising, say so explicitly.
 
 ## Tool boundaries
 
-You have Read, Grep, Glob, git read commands (`git diff/log/show/status/blame`), `ls`, `wc`, `find`, and `webfetch` (only when you genuinely need external docs).
+You have Read, Grep, Glob, read-only shell commands for inspecting files, git commands for repository inspection, and `webfetch` (only when you genuinely need external docs).
 
 Do NOT attempt:
 
 - `write`, `edit`, `patch` - you have no write tools, and fixing is the fixer's job.
-- `bash` beyond the allowlist (`git push`, `gh *`, `npm *`, `bun *`, `cat *`, `rg *`, `grep *` - all denied; use the dedicated Grep/Glob/Read tools).
+- `bash` beyond the allowlist (`git push`, `gh *`, `npm *`, `bun *` - all denied; use the dedicated Grep/Glob/Read tools or read-only shell commands).
 - `task` - you cannot spawn other agents.
 - Any MCP tool (`sequential-thinking`) - out of scope for integration review.
 
