@@ -118,7 +118,7 @@ Switch agents with **Tab** in the TUI:
 
 - `reviewer` - **default**, and also the pipeline's review-fix loop owner.
   Invoked directly in a tab it runs *interactive mode* (resolves repo/branch/base itself, defaults to `audit-only`, opens a PR only when you ask).
-  Invoked by `pipeline-execution` it runs *caller mode* (risk-selected reviewers + fixer loop, final verify gate, draft PR).
+  Invoked by `pipeline-execution` it runs *caller mode* (risk-selected reviewers + fixer loop, final verify gate, PR label decision).
 - `architect` - orchestrator.
   Auto-detects the per-repo GitHub Issues bundle if present, falls back to ad-hoc otherwise.
   All code work goes through the global `pipeline-execution` skill.
@@ -155,11 +155,16 @@ pipeline-execution (skill)
             ├─ task → reviewer-* (risk-selected, parallel)   audit
             ├─ task → fixer (GPT-5.5) ← loop ≤3
             └─ push parent branch
-            └─ open draft PR with `hitl` | `hitl-blocked` label
+            └─ open PR with `approved` | `hitl` label
 ```
 
 Diversity by design: planner (Anthropic Fable 5), executor (OpenAI GPT-5.5), reviewer orchestrator (Anthropic Fable 5) + selected OpenCode Go reviewers (DeepSeek V4 Flash for fast smoke checks, MiniMax M3 for architecture, deep reasoning, and bounded cross-file review).
 Four labs (Anthropic, OpenAI, DeepSeek, MiniMax) avoid shared blind spots while keeping costs low.
+
+PR labels are the merge contract:
+
+- `approved` means the automated review loop found no remaining blockers, the final verify gate passed, and the PR is ready to merge once repository checks are green.
+- `hitl` means human review is required because blockers, uncertainty, disagreement, or missing verification remain.
 
 ### Publish gate (`.opencode/plugins/` + `.opencode/tools/`)
 

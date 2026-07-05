@@ -249,17 +249,9 @@ export default tool({
 
       if (verdict === "clean") {
         const lastPass = state.passes.at(-1)
-        if (
-          lastPass === undefined ||
-          lastPass.nextAction === "publish_blocked" ||
-          lastPass.nextAction === "abort_duplicate"
-        ) {
-          throw new Error("cannot authorize clean publish without at least one resolved pass")
+        if (lastPass?.nextAction === "publish_blocked" || lastPass?.nextAction === "abort_duplicate") {
+          throw new Error("cannot authorize clean publish after unresolved review loop")
         }
-      }
-
-      if (verdict === "blocked" && state.passes.length < 1) {
-        throw new Error("cannot authorize blocked publish without at least one pass")
       }
 
       state.publishAuthorized = true

@@ -59,7 +59,7 @@ Label: `status:prd` + relevant `type:*`. Body shape:
 
 Execution mode: [direct agent execution | split into parallel agent tasks]
 Parent branch: <username>/<issue-number>-<short-slug>
-Parent PR: one draft PR only
+Parent PR: one PR only
 
 Agent tasks:
 
@@ -70,7 +70,7 @@ Agent tasks:
   - Depends on: [task title or `none`]
   - Verify: [command or manual flow for this task]
   - Status: pending
-  - Commit: —
+  - Commit: -
 
 Coordination rules:
 
@@ -123,9 +123,9 @@ Do not leave the final plan only in chat. The issue body is the source of truth 
 ## Anti-Patterns
 
 - Flipping to `status:prd` while `Missing Decisions` remain.
-- Empty `## Verify` ("looks fine when done") — must be observable.
+- Empty `## Verify` ("looks fine when done") - must be observable.
 - `## Repo` left as `TBD`.
 - Task list with vague tasks ("add stuff to the API"). Each task names its surface.
-- Listing more than ~5 tasks for a single PRD — that usually means the slice should be split into multiple drafts and re-shaped via `project-to-draft`.
+- Listing more than ~5 tasks for a single PRD - that usually means the slice should be split into multiple drafts and re-shaped via `project-to-draft`.
 - Skipping the consolidation gate.
 - Editing the issue body without re-fetching first under concurrent writes.

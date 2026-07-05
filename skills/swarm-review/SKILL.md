@@ -1,6 +1,6 @@
 ---
 name: swarm-review
-description: Risk-selected parallel code review. Use when the user asks to review, audit, or get a second opinion on recent code changes. Delegates to the smallest useful set of DeepSeek reviewer subagents in parallel, then consolidates findings into a prioritized summary.
+description: Risk-selected parallel code review. Use when the user asks to review, audit, or get a second opinion on recent code changes. Delegates to the smallest useful set of OpenCode Go reviewer subagents in parallel, then consolidates findings into a prioritized summary.
 license: MIT
 metadata:
   author: cgaravitoq
@@ -9,7 +9,8 @@ metadata:
 
 # Swarm Review
 
-Run a parallel, risk-selected code review on recent changes by delegating to specialized reviewer subagents. The point of the swarm is **diversity of blind spots** without paying for irrelevant perspectives: each reviewer has a narrow specialty and the roster mixes DeepSeek V4 Flash (fast smoke pass) with V4 Pro (deeper reasoning).
+Run a parallel, risk-selected code review on recent changes by delegating to specialized reviewer subagents.
+The point of the swarm is **diversity of blind spots** without paying for irrelevant perspectives: each reviewer has a narrow specialty and the roster mixes DeepSeek V4 Flash (fast smoke pass) with MiniMax M3 (deeper review).
 
 ## When to use
 
@@ -144,7 +145,7 @@ After presenting the summary, **wait for the user** before applying any fixes. T
 
 ## Cost awareness
 
-OpenCode Go limits apply to all four reviewers (they all use DeepSeek through the `opencode-go` provider). The swarm runs four (or more) parallel sessions, each consuming context.
+OpenCode Go limits apply to all four reviewers through the `opencode-go` provider. The swarm runs four (or more) parallel sessions, each consuming context.
 
 - A full 4-reviewer swarm on a medium-sized change typically costs $0.20-$0.80.
 - Running it on every trivial change will exhaust the weekly cap fast.
