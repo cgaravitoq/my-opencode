@@ -91,7 +91,8 @@ Every invocation runs the full loop by default:
 4. Push the branch.
 5. Label the already-open PR `approved` or `hitl`.
 
-It never opens PRs (the PR is expected to already exist) and never merges - a downstream agent owns the merge.
+The PR is expected to already exist; if none is open, the reviewer pushes and opens a draft PR labeled with the verdict.
+It never opens ready-for-review PRs and never merges - a downstream agent owns the merge.
 Say "solo revisa" / "audit only" for a read-only run with findings and a would-be verdict.
 
 The review-fix loop is capped at **3 passes** - at most 2 fix rounds, since recording pass 3 always returns `publish_blocked` - enforced by the `review-state` tool (see below).
@@ -131,7 +132,7 @@ When the counter exceeds it, `review-state.record_swarm` returns `overBudget: tr
 
 `approved` means the review loop found no remaining blockers, no unresolved disagreements, and the end-to-end gate passed - the downstream agent can merge once repository checks are green.
 `hitl` means human review is required: unresolved or `unable` blockers, loop exhaustion, verify failure or unavailability, or reviewer disagreement.
-The verdict lands as a label on the branch's existing PR (swapped atomically with its opposite); if no PR exists, the agent pushes anyway, reports it, and does not create one.
+The verdict lands as a label on the branch's existing PR (swapped atomically with its opposite); if no PR exists, the agent pushes, opens a draft PR, and labels it with the verdict.
 
 ### Review state (`.opencode/plugins/` + `.opencode/tools/`)
 

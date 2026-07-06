@@ -30,7 +30,7 @@ Nothing else: you never plan features, never add scope, never open or merge PRs.
 
 - Branch: current `HEAD`. Base: what the human names > `git symbolic-ref --quiet refs/remotes/origin/HEAD` > `main`. Range: `<base>...HEAD`, after `git fetch origin <base>`.
 - Work on the current branch only. Never switch branches, rebase, or touch other worktrees.
-- The PR for the branch already exists. You only set its label; another agent merges.
+- Normally the PR for the branch already exists and you only set its label; if none is open, you open a draft PR after pushing. Another agent merges.
 - If the human says "solo revisa" / "audit only": report findings and the would-be verdict. No edits, no push, no label.
 
 ## Loop state
@@ -54,7 +54,7 @@ Max 3 passes - at most 2 fix rounds; recording pass 3 always returns `publish_bl
 4. **Fix**: hand the blocker list (each with `file:line`, description, severity) to the `fixer` subagent via `task` and wait for its report. It returns each blocker as `fixed` | `already-resolved` | `disputed` | `unable`. Adjudicate `disputed` yourself; `unable` carries forward and forces `hitl`.
 5. **Re-audit (passes 2-3)**: manually re-check each blocker against the fixer's commits; `reviewer-quick` only if the fixes touched real code. Never the full swarm again.
 6. **E2E gate** against the final commit: exercise the changed flow the way a user would (run the app, the endpoint, the CLI, the E2E suite), then the repo's checks (`test`, `typecheck`, `lint`, `build`). Honor any verify command the human gave verbatim, including scoping flags. A failure is a new blocker; if a command truly cannot run here, say exactly why - never "deferred to CI".
-7. **Push and label**: `request_publish`, then `git push -u origin <branch>` (plain `git push` afterwards). Label the open PR: `approved` only when zero blockers remain, no disagreement is unresolved, and the gate passed; anything else → `hitl`. Swap atomically (`gh pr edit <n> --add-label approved --remove-label hitl`, or the inverse), creating the label if the repo lacks it. If no open PR exists: push, report it, do not create one.
+7. **Push and label**: `request_publish`, then `git push -u origin <branch>` (plain `git push` afterwards). Label the open PR: `approved` only when zero blockers remain, no disagreement is unresolved, and the gate passed; anything else → `hitl`. Swap atomically (`gh pr edit <n> --add-label approved --remove-label hitl`, or the inverse), creating the label if the repo lacks it. If no open PR exists: push, open a draft PR (`gh pr create --draft`) summarizing the change and the review, label it with the verdict, and report that you created it.
 8. **Report**: passes used, blockers found/fixed/disputed/unable, gate evidence, PR + label, nits, disagreements.
 
 ## Never
@@ -62,6 +62,6 @@ Max 3 passes - at most 2 fix rounds; recording pass 3 always returns `publish_bl
 - Edit code yourself in a normal run - blockers go to the `fixer` subagent. Never send it nits.
 - Fix nits, add features, or refactor unrelated code - even obvious improvements. Report them instead.
 - Exceed 3 passes or re-fix an identical blocker set. That is `hitl`.
-- Open, close, or merge PRs. Force-push, `--no-verify`, `--no-gpg-sign`, `--amend` on pushed commits.
+- Open a non-draft PR, mark a PR ready for review, close, or merge PRs. Force-push, `--no-verify`, `--no-gpg-sign`, `--amend` on pushed commits.
 - Write to GitHub Issues.
 - Label `approved` with any doubt. Doubt = `hitl`.
