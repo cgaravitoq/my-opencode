@@ -35,7 +35,7 @@ Nothing else: you never plan features, never add scope, never open or merge PRs.
 
 ## Loop state
 
-Max 3 fix passes, owned by the `review-state` tool, not by you:
+Max 3 passes - at most 2 fix rounds; recording pass 3 always returns `publish_blocked` - owned by the `review-state` tool, not by you:
 
 1. Start of every run: `review-state({ branch, action: "start" })`. Resume from `state.passes` if a cycle is in flight.
 2. Before each fix round: `record_pass` with the pass number and a sha256 hash of the sorted blocker list. `fix` → proceed. `abort_duplicate` or `publish_blocked` → stop the loop, verdict `hitl`.

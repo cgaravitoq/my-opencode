@@ -12,7 +12,25 @@ type ReviewState = {
   swarmInvocations?: number
 }
 
+const publishCommandPattern = /(^|\s)(git\s+push|gh\s+pr\s+create|gh\s+pr\s+edit)\b/
 const reviewerSubagentPattern = /^reviewer-(quick|arch|reasoning|e2e)$/
+
+function parseBranchFromCommand(cmd: string): string | null {
+  const gitPushMatch = cmd.match(/git\s+push\s+(?:(?:--?[\w-]+(?:[= ][^\s]*)?\s+)*)(\S+)\s+(\S+)/)
+  const gitPushBranch = gitPushMatch?.[2]
+  if (gitPushBranch) return gitPushBranch.replace(/^HEAD:/, "")
+
+  const ghHeadMatch = cmd.match(/gh\s+pr\s+create\b.*?--head[= ]([^\s]+)/)
+  const ghHeadBranch = ghHeadMatch?.[1]
+  if (ghHeadBranch) return ghHeadBranch
+
+  return null
+}
+
+function extractWorkdir(args: Record<string, unknown>): string | null {
+  const wd = args.workdir
+  return typeof wd === "string" && wd.length > 0 ? wd : null
+}
 
 const stateRoot = () => process.env.XDG_STATE_HOME ?? path.join(os.homedir(), ".local", "state")
 
@@ -52,6 +70,38 @@ let lock: Promise<void> = Promise.resolve()
 export const ReviewGuardrails: Plugin = async ({ $, worktree }) => {
   return {
     "tool.execute.before": async (input, output) => {
+      if (input.tool === "bash") {
+        const cmd = String(output.args.command ?? "")
+
+        if (!publishCommandPattern.test(cmd)) return
+        if (process.env.OPENCODE_REVIEW_BYPASS === "1") return
+
+        const cwd = extractWorkdir(output.args as Record<string, unknown>) ?? worktree
+        let branch = parseBranchFromCommand(cmd) ?? ""
+
+        if (!branch) {
+          try {
+            branch = (await $`git rev-parse --abbrev-ref HEAD`.cwd(cwd).text()).trim()
+          } catch {
+            throw new Error("review-guardrails: cannot determine current branch; refusing publish")
+          }
+        }
+
+        if (!branch || branch === "HEAD") {
+          throw new Error("review-guardrails: cannot determine current branch; refusing publish")
+        }
+
+        const state = await readReviewState(stateFileForBranch(worktree, branch))
+
+        if (state?.publishAuthorized !== true) {
+          throw new Error(
+            `publish gated by review-state for branch '${branch}' - call review-state with action='request_publish' and verdict before git push, gh pr create, or gh pr edit (or set OPENCODE_REVIEW_BYPASS=1 for emergencies)`,
+          )
+        }
+
+        return
+      }
+
       if (input.tool === "task") {
         const sub = String(output.args.subagent_type ?? "")
 

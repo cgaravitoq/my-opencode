@@ -94,7 +94,7 @@ Every invocation runs the full loop by default:
 It never opens PRs (the PR is expected to already exist) and never merges - a downstream agent owns the merge.
 Say "solo revisa" / "audit only" for a read-only run with findings and a would-be verdict.
 
-The review-fix loop is capped at **3 passes**, enforced by the `review-state` tool (see below).
+The review-fix loop is capped at **3 passes** - at most 2 fix rounds, since recording pass 3 always returns `publish_blocked` - enforced by the `review-state` tool (see below).
 The fixer is surgical: blockers only (`critical` + `important`), reproduce first, minimum delta, one conventional commit per logical group, per-fix verify with revert on failure.
 Nits are never fixed - they go in the report for the human.
 
@@ -137,9 +137,10 @@ The verdict lands as a label on the branch's existing PR (swapped atomically wit
 
 The loop is enforced by two global files symlinked into `~/.config/opencode/` by the installer.
 `.opencode/tools/review-state.ts` is the custom tool the `reviewer` agent uses to track the review-fix loop and record the publish verdict (see `agents/reviewer.md` "Loop State").
-`.opencode/plugins/review-guardrails.ts` records `reviewer-*` swarm invocations in the same state file for observability.
-It does not block bash, task, push, or PR commands.
-The loop budget (3 fix passes + advisory swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review.
+`.opencode/plugins/review-guardrails.ts` records `reviewer-*` swarm invocations in the same state file for observability, and hard-gates publishes: `git push`, `gh pr create`, and `gh pr edit` fail until `request_publish` has authorized the branch.
+Set `OPENCODE_REVIEW_BYPASS=1` to skip the publish gate in an emergency.
+The swarm counter itself never blocks - the cap stays advisory.
+The loop budget (3 passes / 2 fix rounds + advisory swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review.
 Inspect state at `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`) when debugging loop behavior.
 Add your own plugins or tools by dropping `.ts`/`.js` files into these directories and re-running `bun run setup`.
 
