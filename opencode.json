@@ -18,6 +18,14 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
+    "figma-bridge": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@gethopp/figma-mcp-bridge"
+      ]
+    },
     "memory-cloud": {
       "type": "remote",
       "url": "{env:MEMORY_CLOUD_URL}"
