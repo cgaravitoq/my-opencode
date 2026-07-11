@@ -52,7 +52,6 @@ async function setup() {
     await mkdir(join(TARGET_DIR, sub), { recursive: true });
   }
   await link(join(REPO_DIR, "opencode.json"), join(TARGET_DIR, "opencode.json"));
-  await link(join(REPO_DIR, "AGENTS.md"), join(TARGET_DIR, "AGENTS.md"));
   await link(join(REPO_DIR, "package.json"), join(TARGET_DIR, "package.json"));
   await linkFilesInDir(join(REPO_DIR, "agents"), join(TARGET_DIR, "agents"), [".md"]);
   await linkDirsInDir(join(REPO_DIR, "skills"), join(TARGET_DIR, "skills"));
@@ -83,7 +82,7 @@ async function unlinkAllSymlinksIn(dir: string) {
 
 async function cleanup() {
   await unlinkIfOurs(join(TARGET_DIR, "opencode.json"));
-  await unlinkIfOurs(join(TARGET_DIR, "AGENTS.md"));
+  await unlinkIfOurs(join(TARGET_DIR, "AGENTS.md"));  // legacy link from versions that installed AGENTS.md
   await unlinkIfOurs(join(TARGET_DIR, "package.json"));
   for (const sub of ["agents", "skills", "plugins", "tools"]) {
     await unlinkAllSymlinksIn(join(TARGET_DIR, sub));

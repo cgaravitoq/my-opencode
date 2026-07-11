@@ -11,7 +11,7 @@ Open an OpenCode tab in a repo and you land directly in the `reviewer` agent, wh
 ```
 .
 ├── opencode.json              # Main config: model, providers, MCP servers, permissions
-├── AGENTS.md                  # Opinionated global rules loaded into every agent
+├── AGENTS.example.md          # Example global rules - copy/adapt as your own ~/.config/opencode/AGENTS.md
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
 │   ├── reviewer.md            # The agent (default): review + fix loop + push + label
@@ -50,9 +50,12 @@ cd ~/code/my-opencode
 bun run setup
 ```
 
-This symlinks every file in this repo into `~/.config/opencode/`.
+This symlinks the config files in this repo into `~/.config/opencode/`.
 Existing files are backed up to `<name>.backup` before being replaced.
 Re-run any time you add new agents to the repo (existing symlinks resolve through `git pull` automatically; only new files need re-linking).
+
+Global agent rules (`~/.config/opencode/AGENTS.md`) are deliberately **not** installed - they are personal, not part of the product config.
+Use `AGENTS.example.md` as a starting point: copy it to `~/.config/opencode/AGENTS.md`, or symlink it from your own dotfiles repo.
 
 ### 4. Subscribe to OpenCode Go (optional, recommended)
 
@@ -181,7 +184,7 @@ Keep it as a reference or adapt its sub-skills to whatever drives your issue wor
 
 ## MCPs
 
-The canonical `opencode.json` ships with the MCP servers used here: `sequential-thinking` and `memory-cloud`.
+The canonical `opencode.json` ships with the MCP servers used here: `sequential-thinking`, `memory-cloud`, and `figma-bridge`.
 GitHub integration goes through the `gh` CLI directly - no MCP required.
 
 ### Optional MCPs you can plug in
