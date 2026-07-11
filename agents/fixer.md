@@ -1,7 +1,7 @@
 ---
 description: Applies the blocker fixes the reviewer hands it - minimum delta, verified, committed. No replanning, no refactors, no new scope.
 mode: subagent
-model: openai/gpt-5.5
+model: openai/gpt-5.6-terra
 reasoningEffort: medium
 temperature: 0.1
 tools:
