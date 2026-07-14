@@ -96,7 +96,8 @@ The agent owns the first three transitions (each via a single `gh issue edit --r
 
 ## Code Work: Delegate to `pipeline-execution`
 
-This skill does **not** call `exec`, `reviewer`, or `fixer` directly. The global `pipeline-execution` skill (in the user's `~/.config/opencode/skills/` config) owns that contract end-to-end.
+This skill does **not** call writers or reviewers directly.
+The global `pipeline-execution` skill owns that contract end-to-end.
 
 Per-task delegation:
 
@@ -116,14 +117,14 @@ After all per-task work is committed, invoke `pipeline-execution` once more for 
 
 - `repo_path`, `parent_branch` as above.
 - `tasks`: optional. If the integration run only triggers review (no further code edits), pass an empty task list and rely on the reviewer to read the existing commit range.
-- `verify_command`: the PRD's `## Verify` command (reviewer runs it as the final gate post-fixer).
+- `verify_command`: the PRD's `## Verify` command, run by the writer before the read-only audit.
 - `tracker_url`: GitHub issue URL.
 - `pr_title`: conventional commit summary referencing the issue (`feat(scope): summary (#42)` or `feat(scope): summary (owner/repo#42)`).
 - `pr_summary`: one-line intent built from `## What`. Must include `Closes <owner/repo#N>` (or `Closes #<N>` same-repo) so the merge auto-closes the issue.
 - `pr_label_approved`: `approved`.
 - `pr_label_human`: `hitl`.
 
-The reviewer (inside `pipeline-execution`) runs the swarm, drives the fixer loop (≤3 passes), runs the final verify gate, pushes the branch, and opens the PR.
+The writer runs the verification gate and handles any findings returned by the bounded read-only reviewer audit before publishing the PR.
 Approved PRs are ready for merge.
 Human-required PRs stay draft with the `hitl` label.
 
@@ -149,7 +150,7 @@ Three layers, all owned downstream by `pipeline-execution`:
 
 1. **Per-task `Verify`** - `exec` runs the task's verify before claiming done.
 2. **Pre-review verify** - `pipeline-execution` runs the integration `verify_command` over the combined change before handing to the reviewer.
-3. **Final verify gate** - the reviewer re-runs `verify_command` after the fixer loop closes, before pushing and opening the PR.
+3. **Final audit** - the read-only reviewer audits the verified exact head and returns its verdict to the writer.
 
 This skill does not run any verify directly.
 It only checks that `pipeline-execution`'s report shows verify passed and a PR label was applied before flipping the parent to `status:hitl`.
@@ -175,7 +176,7 @@ When validating the workflow on a real PRD:
 - Persisting a commit hash to the issue body without verifying it exists with `git log --oneline -1 <hash>`.
 - Silently retrying a `pipeline-execution` call that returned a blocker. Surface it as a `Blocker:` and stop.
 - Silently retrying when `pipeline-execution` reports `hitl`. Surface residual blockers or uncertainty; the human decides.
-- Invoking `exec`, `reviewer`, `fixer`, or any `reviewer-*` directly from this skill. Always go through `pipeline-execution`.
+- Invoking a writer, `reviewer`, or any `reviewer-*` directly from this skill. Always go through `pipeline-execution`.
 - Bypassing `pipeline-execution` with a manual `git push` + `gh pr create`. The label, the review loop summary, and the verify gate are part of the contract.
 - Restarting an in-flight PRD without checking `## Implementation` first. Detect resume scenarios and ask the user.
 - Creating per-task branches.

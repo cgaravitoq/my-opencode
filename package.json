@@ -1,6 +1,6 @@
 {
   "name": "my-opencode",
-  "description": "Public OpenCode configuration with a single review/fix/approve agent, swarm reviewers, review guardrails, and a per-repo GitHub Issues workflow template.",
+  "description": "Public OpenCode configuration with a read-only review orchestrator, swarm reviewers, review guardrails, and a per-repo GitHub Issues workflow template.",
   "license": "MIT",
   "repository": {
     "type": "git",

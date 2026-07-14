@@ -15,7 +15,9 @@ For the personal GitHub Issues flow, this runs after:
 idea-to-issue -> [project-to-draft] -> draft-to-prd
 ```
 
-End-to-end: resolve the target repo, switch into it, prepare the parent spec, then **delegate code work to the global `pipeline-execution` skill** (which owns `exec → reviewer → fixer × ≤3 → PR`). This skill only handles GitHub Issues bookkeeping - label transitions, body checkboxes, issue comments, `## Implementation` updates.
+End-to-end: resolve the target repo, switch into it, prepare the parent spec, then **delegate code work to the global `pipeline-execution` skill**.
+The writer handles findings from a bounded read-only reviewer audit before publishing the PR.
+This skill only handles GitHub Issues bookkeeping - label transitions, body checkboxes, issue comments, and `## Implementation` updates.
 
 Coordination model: each task in the `## AI Agent Execution Plan` is a markdown checkbox in the parent body. The architect (not the worker) updates the checkbox state plus inline `Status` and `Commit` fields based on the worker's report, and appends issue comments to log events. The body is source-of-truth status; the comment timeline is the event log.
 
@@ -146,7 +148,9 @@ Do not create GitHub sub-issues, parent-linked issues, or external trackers for 
 
 ### 5. Implement via the global `pipeline-execution` skill
 
-Code work is **not** implemented inline in this skill. Delegate the entire `exec → reviewer → fixer × ≤3 → PR` loop to the global `pipeline-execution` skill. This bundle only handles GitHub Issues bookkeeping around it.
+Code work is **not** implemented inline in this skill.
+Delegate the writer, verification, bounded read-only audit, finding resolution, and PR workflow to the global `pipeline-execution` skill.
+This bundle only handles GitHub Issues bookkeeping around it.
 
 Unless the user asked for `plan-only`:
 
@@ -158,19 +162,20 @@ Unless the user asked for `plan-only`:
    - **Invoke `pipeline-execution`** for the task with: repo path, parent branch, the single task block, the GitHub issue URL as `tracker_url`, no `verify_command` yet (per-task verify is inside the task block).
    - **After the call returns**: read the per-task commit hash from the report. Verify the commit exists on the parent branch (`git log --oneline -1 <hash>`). Flip the checkbox to `[x]`, fill `Commit: <hash>`, set `Status: done`, append a "Completed Task X - commit `<hash>`. Verify ran: `<command>` (pass)." comment.
 5. **PRD-level run** (after all per-task work is committed): invoke `pipeline-execution` once more with the full task list collapsed to a single "post-integration" entry, the PRD `## Verify` block as `verify_command`, the GitHub issue URL as `tracker_url`, the PR title and summary built from `## What`, and `pr_label_approved: approved` / `pr_label_human: hitl`.
-   This run owns the swarm, the fixer loop, the final verify gate, and the PR push.
-   The reviewer ensures the PR body contains `Closes #<N>` (or `Closes owner/repo#<N>` cross-repo) so the parent issue auto-closes on merge.
+   This run owns final verification, the bounded read-only swarm audit, finding resolution by the writer, and the PR push.
+   The writer ensures the PR body contains `Closes #<N>` (or `Closes owner/repo#<N>` cross-repo) so the parent issue auto-closes on merge.
 
-   *Alternative*: the per-task `pipeline-execution` invocations skip the reviewer (mode `audit-only` if supported), and only the final integration call runs the swarm + fixer loop + opens the PR. Pick whichever the architect supports - the contract is "one PR per PRD, reviewer-owned".
+   *Alternative*: the per-task `pipeline-execution` invocations skip review and only the final integration call runs the read-only swarm audit and opens the PR.
+   Pick whichever the architect supports - the contract is one PR per PRD with one exact-head audit.
 
-6. **After the final `pipeline-execution` returns**: update `## Implementation` with the final branch, latest commit hash (after fixer passes if any), PR URL, label applied (`approved` or `hitl`), the review loop summary (passes used, blockers resolved, residual concerns), and the final verify evidence.
+6. **After the final `pipeline-execution` returns**: update `## Implementation` with the final branch, audited commit hash, PR URL, label applied (`approved` or `hitl`), findings resolved by the writer, residual concerns, and final verification evidence.
 7. Move the parent to `status:hitl`: `gh issue edit <N> --remove-label status:running --add-label status:hitl`.
 
 What this skill does **not** do:
 
-- Run `exec`, `reviewer`, `fixer`, or `reviewer-*` directly. Those are owned by `pipeline-execution`.
-- Run `git push` or `gh pr create` directly. The reviewer (inside `pipeline-execution`) pushes and opens the PR.
-- Decide swarm composition or fixer iteration limits. Those live in `pipeline-execution` and `reviewer`.
+- Run a writer, `reviewer`, or `reviewer-*` directly. Those are owned by `pipeline-execution`.
+- Run `git push` or `gh pr create` directly. The writer inside `pipeline-execution` owns publication.
+- Decide swarm composition. That lives in `pipeline-execution` and `reviewer`.
 
 If the reviewer (inside `pipeline-execution`) returns `hitl`, still move the parent to `status:hitl`. The PR is open with the `hitl` label and residual concerns or uncertainty in its body - the human owns the next step. Surface this explicitly to the user; do not silently retry the loop.
 
@@ -284,8 +289,8 @@ That workflow is the bundle's only required automation. Without it the flow stil
 - Do not create more than one branch or PR for a PRD.
 - Do not move the parent to `status:running` unless work is actually starting.
 - Do not move issues to `status:ready` from this skill - human review (and the merge auto-close) owns that.
-- Do not invoke `exec`, `reviewer`, `fixer`, or any `reviewer-*` agent directly. Always go through the global `pipeline-execution` skill.
-- Do not push the parent branch or run `gh pr create` directly. `pipeline-execution` (via the reviewer) owns push + PR.
+- Do not invoke a writer, `reviewer`, or any `reviewer-*` agent directly. Always go through the global `pipeline-execution` skill.
+- Do not push the parent branch or run `gh pr create` directly. The writer inside `pipeline-execution` owns push and PR publication.
 - Do not skip the `pipeline-execution` call because the swarm "would probably pass". Every PRD goes through the loop before `status:hitl`.
 - Do not skip the repo resolution step. Without `## Repo` resolved, no execution.
 - Keep the parent issue body concise and executable; the body is the source-of-truth status surface.

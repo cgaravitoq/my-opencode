@@ -4,9 +4,27 @@
   "model": "anthropic/claude-sonnet-5",
   "default_agent": "reviewer",
   "permission": {
-    "*": "allow",
+    "*": "deny",
+    "read": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "lsp": "allow",
+    "skill": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "edit": "deny",
     "bash": {
-      "*": "allow"
+      "*": "deny",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "git rev-parse*": "allow",
+      "git merge-base*": "allow",
+      "git symbolic-ref*": "allow",
+      "git branch --show-current*": "allow",
+      "git ls-files*": "allow"
     }
   },
   "mcp": {

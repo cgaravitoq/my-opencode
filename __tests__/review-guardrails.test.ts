@@ -130,3 +130,43 @@ describe("review-guardrails plugin", () => {
     }
   })
 })
+
+describe("reviewer configuration", () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..")
+
+  test("keeps authentication plugins and MCP configuration while denying mutations", async () => {
+    const config = JSON.parse(await readFile(path.join(repoRoot, "opencode.json"), "utf8")) as {
+      plugin?: string[]
+      mcp?: Record<string, unknown>
+      permission?: Record<string, unknown>
+    }
+
+    expect(config.plugin).toContain("opencode-claude-auth@latest")
+    expect(Object.keys(config.mcp ?? {})).toEqual(
+      expect.arrayContaining(["sequential-thinking", "figma-bridge", "memory-cloud"]),
+    )
+    expect(config.permission?.["*"]).toBe("deny")
+    expect(config.permission?.edit).toBe("deny")
+    expect(config.permission?.bash).toMatchObject({ "*": "deny" })
+  })
+
+  test("makes every installed agent structurally read-only", async () => {
+    const agentsDir = path.join(repoRoot, "agents")
+    const agentFiles = (await readdir(agentsDir)).filter((entry) => entry.endsWith(".md"))
+
+    expect(agentFiles).not.toContain("fixer.md")
+
+    for (const agentFile of agentFiles) {
+      const source = await readFile(path.join(agentsDir, agentFile), "utf8")
+      const frontmatter = source.split("---", 3)[1] ?? ""
+
+      expect(frontmatter).toContain("edit: deny")
+      expect(frontmatter).not.toMatch(/\b(?:write|edit|patch): true\b/)
+      expect(frontmatter).not.toContain('"*": allow')
+      expect(source).not.toContain("git push")
+      expect(source).not.toContain("gh pr")
+      expect(source).not.toContain("request_publish")
+      expect(source).not.toContain("review-state")
+    }
+  })
+})

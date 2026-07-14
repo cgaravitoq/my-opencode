@@ -1,10 +1,11 @@
 # my-opencode
 
-Public, versioned [OpenCode](https://opencode.ai) configuration for a **single review/fix/approve agent** plus a multi-model reviewer swarm.
+Public, versioned [OpenCode](https://opencode.ai) configuration for a **read-only review agent** plus a multi-model reviewer swarm.
 Clone it on any machine, run the installer, and your OpenCode setup is ready.
 
-This config covers exactly one role: closing the loop on code that was planned and implemented elsewhere - by you, another tool, or another agent; it does not matter which.
-Open an OpenCode tab in a repo and you land directly in the `reviewer` agent, which investigates the current branch against its target base, tests the change end-to-end, fixes blockers itself, pushes, and leaves the branch's already-open PR labeled `approved` or `hitl` for a downstream merge agent.
+This config covers exactly one role: auditing code that was planned and implemented elsewhere.
+Open an OpenCode tab in a repo and you land directly in the `reviewer` agent, which investigates the current branch against its target base and returns an exact-head verdict to its caller.
+It cannot edit files, execute write-capable shell commands, create commits, push branches, or change GitHub state.
 
 ## What's inside
 
@@ -14,9 +15,8 @@ Open an OpenCode tab in a repo and you land directly in the `reviewer` agent, wh
 ├── AGENTS.example.md          # Example global rules - copy/adapt as your own ~/.config/opencode/AGENTS.md
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
-│   ├── reviewer.md            # The agent (default): review + fix loop + push + label
-│   ├── fixer.md               # Subagent: applies the blocker fixes the reviewer hands it
-│   └── reviewer-*.md          # Four specialized swarm reviewers (subagents)
+│   ├── reviewer.md            # The default read-only review orchestrator
+│   └── reviewer-*.md          # Four specialized read-only swarm reviewers
 ├── templates/
 │   └── github-issues-skill/   # Per-repo GitHub Issues bundle template (legacy, see below)
 ├── scripts/
@@ -25,7 +25,7 @@ Open an OpenCode tab in a repo and you land directly in the `reviewer` agent, wh
 │   ├── plugins/               # Global OpenCode plugins symlinked into ~/.config/opencode/plugins/
 │   │   └── review-guardrails.ts # Observability plugin: records reviewer swarm invocations
 │   └── tools/                 # Global OpenCode tools symlinked into ~/.config/opencode/tools/
-│       └── review-state.ts    # Custom tool owning review-fix loop state (consumed by `agents/reviewer.md`)
+│       └── review-state.ts    # Legacy review-loop state tool, denied to reviewer agents
 └── __tests__/                 # Tests for the tool and the plugin
 ```
 
@@ -74,7 +74,7 @@ opencode
 ```bash
 opencode
 # in the TUI:
-/agents    # should list: reviewer, fixer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick
+/agents    # should list: reviewer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick
 /models    # should include anthropic/claude-sonnet-5, openai/gpt-5.5, opencode-go/deepseek-v4-flash,
            # opencode-go/deepseek-v4-pro, opencode-go/glm-5.2, opencode-go/minimax-m3
 ```
@@ -84,30 +84,20 @@ opencode
 ### The `reviewer` agent (default)
 
 Open a fresh OpenCode tab and you are already in `reviewer`.
-It resolves everything itself: repo = current workdir, branch = current `HEAD`, base = the repo's default branch (`origin/main` typically), or whatever base you name.
+It resolves the review scope itself: repo = current workdir, branch = current `HEAD`, base = the local default branch (`origin/main` typically), or whatever base you name.
 
-Every invocation runs the full loop by default:
+Every invocation runs a read-only review:
 
-1. Investigate the diff (risk-selected swarm + its own reading).
-2. Test the change end-to-end (exercise the affected flow, not just typecheck).
-3. Hand every blocker to the `fixer` subagent, which commits surgical fixes.
-4. Push the branch.
-5. Label the already-open PR `approved` or `hitl`.
+1. Inspect the exact local head and diff.
+2. Delegate risk-specific analysis to read-only reviewer subagents.
+3. Consolidate findings and return `VERDICT: APPROVE|REJECT` with the reviewed commit SHA.
 
-The PR is expected to already exist; if none is open, the reviewer pushes and opens a draft PR labeled with the verdict.
-It never opens ready-for-review PRs and never merges - a downstream agent owns the merge.
-Say "solo revisa" / "audit only" for a read-only run with findings and a would-be verdict.
+The reviewer does not contact GitHub or execute test commands because either can mutate local or remote state.
+The writer or integration owner owns fixes, verification, publishing, and merge decisions.
 
-The review-fix loop is capped at **3 passes** - at most 2 fix rounds, since recording pass 3 always returns `publish_blocked` - enforced by the `review-state` tool (see below).
-The fixer is surgical: blockers only (`critical` + `important`), reproduce first, minimum delta, one conventional commit per logical group, per-fix verify with revert on failure.
-Nits are never fixed - they go in the report for the human.
-
-The final gate resolves commands in this order: an explicit command you give it → the repo's E2E / integration suite covering the change → the repo's own scripts (`typecheck`, `lint`, `test`, `build`).
-
-### The subagents (swarm + fixer)
+### The subagents
 
 Pass 1 delegates to the smallest useful set of specialized reviewers, launched in parallel with background tasks.
-Blocker fixes are delegated to the `fixer`:
 
 | Agent | Model | Lab | Role |
 |---|---|---|---|
@@ -115,10 +105,8 @@ Blocker fixes are delegated to the `fixer`:
 | `reviewer-reasoning` | DeepSeek V4 Pro | DeepSeek | Logic correctness, edge cases, error paths. |
 | `reviewer-arch` | GLM-5.2 | Zhipu | Architecture, design patterns, abstractions. |
 | `reviewer-e2e` | MiniMax M3 | MiniMax | Bounded cross-file impact, integration, breaking changes. |
-| `fixer` | GPT-5.5 | OpenAI | Applies the blocker fixes: minimum delta, verified, committed. |
 
-Diversity by design: five labs in the loop - Anthropic orchestrates the review, DeepSeek / Zhipu / MiniMax audit from different angles, and OpenAI writes the fixes.
-No lab reviews its own work, avoiding shared blind spots while keeping costs low.
+Diversity by design: Anthropic orchestrates the review while DeepSeek, Zhipu, and MiniMax audit from different angles.
 Say "lanza el swarm completo" / "full swarm" to force all four reviewers regardless of change size.
 
 Background subagents must be enabled for real wall-clock parallelism:
@@ -133,19 +121,14 @@ When the counter exceeds it, `review-state.record_swarm` returns `overBudget: tr
 
 ### Verdict contract
 
-`approved` means the review loop found no remaining blockers, no unresolved disagreements, and the end-to-end gate passed - the downstream agent can merge once repository checks are green.
-`hitl` means human review is required: unresolved or `unable` blockers, loop exhaustion, verify failure or unavailability, or reviewer disagreement.
-The verdict lands as a label on the branch's existing PR (swapped atomically with its opposite); if no PR exists, the agent pushes, opens a draft PR, and labels it with the verdict.
+`APPROVE` means the read-only audit found no blockers and the observed head matches the requested head.
+`REJECT` means a blocker, unresolved disagreement, head mismatch, or material verification limitation remains.
+The verdict is returned to the caller only.
 
-### Review state (`.opencode/plugins/` + `.opencode/tools/`)
+### Legacy review state (`.opencode/plugins/` + `.opencode/tools/`)
 
-The loop is enforced by two global files symlinked into `~/.config/opencode/` by the installer.
-`.opencode/tools/review-state.ts` is the custom tool the `reviewer` agent uses to track the review-fix loop and record the publish verdict (see `agents/reviewer.md` "Loop State").
-`.opencode/plugins/review-guardrails.ts` records `reviewer-*` swarm invocations in the same state file for observability, and hard-gates publishes: `git push`, `gh pr create`, and `gh pr edit` fail until `request_publish` has authorized the branch.
-Set `OPENCODE_REVIEW_BYPASS=1` to skip the publish gate in an emergency.
-The swarm counter itself never blocks - the cap stays advisory.
-The loop budget (3 passes / 2 fix rounds + advisory swarm cap) is per review cycle; re-reviewing the same branch after a published cycle starts a fresh budget automatically and archives the prior cycle in `cycles[]`, so manually deleting state is rarely needed for a normal re-review.
-Inspect state at `$XDG_STATE_HOME/opencode/review-state/<repo-hash>/<branch>.json` (defaults to `~/.local/state/opencode/review-state/...`) when debugging loop behavior.
+These files remain installed for backward compatibility and observability.
+The read-only reviewer cannot invoke the state tool or any publish command.
 Add your own plugins or tools by dropping `.ts`/`.js` files into these directories and re-running `bun run setup`.
 
 ### Context window tuning

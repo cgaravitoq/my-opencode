@@ -13,7 +13,8 @@ Entry point for this repo's GitHub Issues workflow. Loaded by the `architect` ag
 
 This bundle is **per-repo**. Each repo declares its own status labels, sub-skill set, and handoff rules. The architect adapts to whatever this file says - there are no hard-coded status names in the agent.
 
-The execution sub-skill (`prd-to-execution` in this default bundle) delegates to the global `pipeline-execution` skill for the actual code work (`exec → reviewer → fixer × ≤3 → PR`). Customizing this bundle is mostly about renaming status labels and tweaking shaping rules - the implementation pipeline stays the same across repos.
+The execution sub-skill (`prd-to-execution` in this default bundle) delegates code work to the global `pipeline-execution` skill and consumes a bounded read-only reviewer verdict before opening the PR.
+Customizing this bundle is mostly about renaming status labels and tweaking shaping rules - the implementation pipeline stays the same across repos.
 
 ## Customizing for your workspace
 
