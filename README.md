@@ -16,7 +16,7 @@ It cannot edit files, execute write-capable shell commands, create commits, push
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
 │   ├── reviewer.md            # The default read-only review orchestrator
-│   └── reviewer-*.md          # Four specialized read-only swarm reviewers
+│   └── reviewer-*.md          # Five specialized read-only swarm reviewers
 ├── templates/
 │   └── github-issues-skill/   # Per-repo GitHub Issues bundle template (legacy, see below)
 ├── scripts/
@@ -74,9 +74,9 @@ opencode
 ```bash
 opencode
 # in the TUI:
-/agents    # should list: reviewer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick
+/agents    # should list: reviewer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick, reviewer-security
 /models    # should include anthropic/claude-sonnet-5, openai/gpt-5.5, opencode-go/deepseek-v4-flash,
-           # opencode-go/deepseek-v4-pro, opencode-go/glm-5.2, opencode-go/minimax-m3
+           # opencode-go/deepseek-v4-pro, opencode-go/glm-5.2, opencode-go/minimax-m3, opencode-go/kimi-k3
 ```
 
 ## How it works
@@ -105,9 +105,10 @@ Pass 1 delegates to the smallest useful set of specialized reviewers, launched i
 | `reviewer-reasoning` | DeepSeek V4 Pro | DeepSeek | Logic correctness, edge cases, error paths. |
 | `reviewer-arch` | GLM-5.2 | Zhipu | Architecture, design patterns, abstractions. |
 | `reviewer-e2e` | MiniMax M3 | MiniMax | Bounded cross-file impact, integration, breaking changes. |
+| `reviewer-security` | Kimi K3 | Moonshot | Vulnerabilities: injection, authz, secrets, unsafe input handling. |
 
-Diversity by design: Anthropic orchestrates the review while DeepSeek, Zhipu, and MiniMax audit from different angles.
-Say "lanza el swarm completo" / "full swarm" to force all four reviewers regardless of change size.
+Diversity by design: Anthropic orchestrates the review while DeepSeek, Zhipu, MiniMax, and Moonshot audit from different angles.
+Say "lanza el swarm completo" / "full swarm" to force all five reviewers regardless of change size.
 
 Background subagents must be enabled for real wall-clock parallelism:
 
