@@ -2,7 +2,7 @@
 description: Read-only final reviewer for the current branch. Reports an exact-head verdict and never changes code or external state.
 mode: primary
 model: anthropic/claude-opus-5
-reasoningEffort: medium
+reasoningEffort: low
 temperature: 0.1
 tools:
   task: true
