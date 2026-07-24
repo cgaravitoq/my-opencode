@@ -16,7 +16,8 @@ It cannot edit files, execute write-capable shell commands, create commits, push
 ├── package.json               # OpenCode plugin dependencies
 ├── agents/                    # Custom agents
 │   ├── reviewer.md            # The default read-only review orchestrator
-│   └── reviewer-*.md          # Five specialized read-only swarm reviewers
+│   ├── reviewer-triage.md     # Cheap routing pass that picks the lenses
+│   └── reviewer-*.md          # Specialized read-only swarm reviewers, one per lens
 ├── templates/
 │   └── github-issues-skill/   # Per-repo GitHub Issues bundle template (legacy, see below)
 ├── scripts/
@@ -74,9 +75,11 @@ opencode
 ```bash
 opencode
 # in the TUI:
-/agents    # should list: reviewer, reviewer-arch, reviewer-reasoning, reviewer-e2e, reviewer-quick, reviewer-security
-/models    # should include anthropic/claude-sonnet-5, openai/gpt-5.5, opencode-go/deepseek-v4-flash,
-           # opencode-go/deepseek-v4-pro, opencode-go/glm-5.2, opencode-go/minimax-m3, opencode-go/kimi-k3
+/agents    # should list: reviewer, reviewer-triage, reviewer-quick, reviewer-reasoning,
+           # reviewer-arch, reviewer-e2e, reviewer-security, reviewer-security-deep
+/models    # should include anthropic/claude-opus-5, opencode-go/deepseek-v4-flash,
+           # opencode-go/deepseek-v4-pro, opencode-go/glm-5.2, opencode-go/minimax-m3,
+           # opencode-go/kimi-k2.7-code, opencode-go/kimi-k3
 ```
 
 ## How it works
@@ -89,28 +92,39 @@ It resolves the review scope itself: repo = current workdir, branch = current `H
 Every invocation runs a read-only review:
 
 1. Inspect the exact local head and diff.
-2. Delegate risk-specific analysis to read-only reviewer subagents.
-3. Consolidate findings and return `VERDICT: APPROVE|REJECT` with the reviewed commit SHA.
+2. Route: `reviewer-triage` reads the diff and returns the lenses the change actually needs, or `none`.
+3. Delegate one read-only subagent per selected lens, in parallel.
+4. Consolidate findings and return `VERDICT: APPROVE|REJECT` with the reviewed commit SHA.
+
+Triage exists so that review depth tracks real risk instead of habit. Name the lenses yourself and it is skipped.
 
 The reviewer does not contact GitHub or execute test commands because either can mutate local or remote state.
 The writer or integration owner owns fixes, verification, publishing, and merge decisions.
 
 ### The subagents
 
-Pass 1 delegates to the smallest useful set of specialized reviewers, launched in parallel with background tasks.
+One subagent per lens, launched in parallel as background tasks.
 
-| Agent | Model | Lab | Role |
-|---|---|---|---|
-| `reviewer-quick` | DeepSeek V4 Flash | DeepSeek | Fast first-pass: typos, copy-paste errors, dead code. |
-| `reviewer-reasoning` | DeepSeek V4 Pro | DeepSeek | Logic correctness, edge cases, error paths. |
-| `reviewer-arch` | GLM-5.2 | Zhipu | Architecture, design patterns, abstractions. |
-| `reviewer-e2e` | MiniMax M3 | MiniMax | Bounded cross-file impact, integration, breaking changes. |
-| `reviewer-security` | Kimi K3 | Moonshot | Vulnerabilities: injection, authz, secrets, unsafe input handling. |
+| Agent | Model | Lab | $/M in-out | Req/5h | Role |
+|---|---|---|---|---|---|
+| `reviewer-triage` | DeepSeek V4 Flash | DeepSeek | 0.14 / 0.28 | uncapped | Picks the lenses. Runs on every review. |
+| `reviewer-quick` | DeepSeek V4 Flash | DeepSeek | 0.14 / 0.28 | uncapped | Typos, copy-paste errors, dead code. |
+| `reviewer-reasoning` | DeepSeek V4 Pro | DeepSeek | 0.435 / 0.87 | 4.300 | Logic correctness, edge cases, error paths. |
+| `reviewer-e2e` | MiniMax M3 | MiniMax | 0.30 / 1.20 | 3.200 | Cross-file impact, integration, breaking changes. |
+| `reviewer-security` | Kimi K2.7 Code | Moonshot | 0.95 / 4 | 1.150 | Injection, authz, secrets, unsafe input handling. |
+| `reviewer-arch` | GLM-5.2 | Zhipu | 1.40 / 4.40 | 880 | Architecture, design patterns, abstractions. |
+| `reviewer-security-deep` | Kimi K3 | Moonshot | **3 / 15** | **220 (2x)** | Escalation only: exploit paths on high-stakes surfaces. |
 
-Diversity by design: Anthropic orchestrates the review while DeepSeek, Zhipu, MiniMax, and Moonshot audit from different angles.
-Say "lanza el swarm completo" / "full swarm" to force all five reviewers regardless of change size.
+Diversity by design: Anthropic orchestrates while DeepSeek, MiniMax, Moonshot, and Zhipu audit from different angles.
+Keeping the security lens outside Anthropic also keeps it working when a provider's safety policy declines to reason about exploits.
 
-Background subagents must be enabled for real wall-clock parallelism:
+Under OpenCode Go the binding constraint is **requests per 5 hours**, not dollars.
+`reviewer-security-deep` draws on the smallest pool of any model in this swarm, at a 2x usage rate and 3x the token price of the standard security lens.
+So it is gated behind an explicit escalation: either `reviewer-security` reports a surface it could not settle, or you ask for it by name.
+The table is ordered by cost, so the price of a lens is visible when you pick one.
+
+Background subagents must be enabled for real wall-clock parallelism.
+There is no `opencode.json` key for this - it is read from the process environment, so it belongs in your shell profile (for interactive sessions) or on the command line that launches the run:
 
 ```bash
 export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
@@ -119,6 +133,7 @@ export OPENCODE_REVIEW_SWARM_CAP=8
 
 The swarm cap is advisory.
 When the counter exceeds it, `review-state.record_swarm` returns `overBudget: true` instead of blocking the agent.
+Every `reviewer-*` subagent counts against it, including the escalation reviewer.
 
 ### Verdict contract
 
