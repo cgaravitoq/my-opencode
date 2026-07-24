@@ -47,6 +47,10 @@
     "memory-cloud": {
       "type": "remote",
       "url": "{env:MEMORY_CLOUD_URL}"
+    },
+    "braintrust": {
+      "type": "remote",
+      "url": "https://api.eu.braintrust.dev/mcp"
     }
   }
 }
