@@ -13,7 +13,7 @@ type ReviewState = {
 }
 
 const publishCommandPattern = /(^|\s)(git\s+push|gh\s+pr\s+create|gh\s+pr\s+edit)\b/
-const reviewerSubagentPattern = /^reviewer-(quick|arch|reasoning|e2e)$/
+const reviewerSubagentPattern = /^reviewer-[a-z0-9-]+$/
 
 function parseBranchFromCommand(cmd: string): string | null {
   const gitPushMatch = cmd.match(/git\s+push\s+(?:(?:--?[\w-]+(?:[= ][^\s]*)?\s+)*)(\S+)\s+(\S+)/)

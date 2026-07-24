@@ -35,6 +35,15 @@ describe("review-guardrails plugin", () => {
     await rm(tmpRoot, { recursive: true, force: true })
   })
 
+  const readSwarmInvocations = async () => {
+    const repoDirs = await readdir(path.join(tmpRoot, "opencode", "review-state"))
+    expect(repoDirs).toHaveLength(1)
+
+    const statePath = path.join(tmpRoot, "opencode", "review-state", repoDirs[0]!, "feature__review.json")
+    const state = JSON.parse(await readFile(statePath, "utf8")) as { swarmInvocations?: number }
+    return state.swarmInvocations
+  }
+
   test("creates state directory before recording reviewer task budget", async () => {
     const plugin = await ReviewGuardrails({ $: fakeShell("feature/review") as never, worktree } as never)
 
@@ -43,12 +52,26 @@ describe("review-guardrails plugin", () => {
       { args: { subagent_type: "reviewer-quick" } } as never,
     )
 
-    const repoDirs = await readdir(path.join(tmpRoot, "opencode", "review-state"))
-    expect(repoDirs).toHaveLength(1)
+    expect(await readSwarmInvocations()).toBe(1)
+  })
 
-    const statePath = path.join(tmpRoot, "opencode", "review-state", repoDirs[0]!, "feature__review.json")
-    const state = JSON.parse(await readFile(statePath, "utf8")) as { swarmInvocations?: number }
-    expect(state.swarmInvocations).toBe(1)
+  test("counts every reviewer subagent, including the costly security lenses", async () => {
+    const plugin = await ReviewGuardrails({ $: fakeShell("feature/review") as never, worktree } as never)
+    const subagents = ["reviewer-triage", "reviewer-quick", "reviewer-reasoning", "reviewer-arch", "reviewer-e2e", "reviewer-security", "reviewer-security-deep"]
+
+    for (const subagent of subagents) {
+      await plugin["tool.execute.before"]?.({ tool: "task" } as never, { args: { subagent_type: subagent } } as never)
+    }
+
+    expect(await readSwarmInvocations()).toBe(subagents.length)
+  })
+
+  test("ignores subagents outside the reviewer swarm", async () => {
+    const plugin = await ReviewGuardrails({ $: fakeShell("feature/review") as never, worktree } as never)
+
+    await plugin["tool.execute.before"]?.({ tool: "task" } as never, { args: { subagent_type: "general" } } as never)
+
+    await expect(readdir(path.join(tmpRoot, "opencode", "review-state"))).rejects.toThrow()
   })
 
   const stateFileFor = (branch: string) => {
