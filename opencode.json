@@ -50,7 +50,7 @@
     },
     "braintrust": {
       "type": "remote",
-      "url": "https://api.eu.braintrust.dev/mcp"
+      "url": "https://api-eu.braintrust.dev/mcp"
     }
   }
 }
