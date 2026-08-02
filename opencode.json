@@ -39,6 +39,7 @@
     "figma-bridge": {
       "type": "local",
       "command": [
+        "mcp-guard",
         "npx",
         "-y",
         "@gethopp/figma-mcp-bridge"
