@@ -34,7 +34,8 @@
         "npx",
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
-      ]
+      ],
+      "enabled": false
     },
     "figma-bridge": {
       "type": "local",
@@ -43,7 +44,8 @@
         "npx",
         "-y",
         "@gethopp/figma-mcp-bridge"
-      ]
+      ],
+      "enabled": false
     },
     "memory-cloud": {
       "type": "remote",
